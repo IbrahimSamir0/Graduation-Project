@@ -190,6 +190,7 @@ class RegisterAsPatientAPI(generics.CreateAPIView):
         
 class MyProfilePatient(generics.ListAPIView):
     authentication_classes = [TokenAuthentication,]
+    permission_classes = [IsAuthenticated,]
     serializer_class = PatientSerializer
     def get(self, request):
         try:
@@ -202,6 +203,7 @@ class MyProfilePatient(generics.ListAPIView):
         
 class EditPatientProfile (generics.RetrieveUpdateAPIView):
     authentication_classes = [TokenAuthentication,]
+    permission_classes = [IsAuthenticated,]
     serializer_class= EditPatientProfileSerializer
     def get(self, request):
         try:
@@ -239,6 +241,7 @@ class RegisterAsDoctorAPI(generics.CreateAPIView):
 
 class EditDoctorProfile(generics.RetrieveUpdateAPIView):
     authentication_classes = [TokenAuthentication,]
+    permission_classes = [IsAuthenticated,]
     serializer_class = EditDoctorProfileSerializer
     def get(self, request):
         doctor = Doctor.objects.get(id= request.user.id)
@@ -255,6 +258,7 @@ class EditDoctorProfile(generics.RetrieveUpdateAPIView):
 
 class MyProfileDoctor(generics.ListAPIView):
     authentication_classes = [TokenAuthentication,]
+    permission_classes = [IsAuthenticated,]
     serializer_class = DoctorSerializer
     def get(self, request):
         try:
@@ -365,6 +369,7 @@ class LogoutAPI(generics.CreateAPIView):
 
 class ChangePasswordView(generics.UpdateAPIView):
     authentication_classes = [TokenAuthentication,]
+    permission_classes = [IsAuthenticated,]
     serializer_class = ChangePasswordSerializer
     model = User
     # authentication_classes =(TokenAuthentication,)
