@@ -1,0 +1,12 @@
+{% load bootstrap4 %}
+<form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% comment %} {% bootstrap_form user_form %} {% endcomment %}
+    {% bootstrap_form profile_form %}
+    {% comment %} {% bootstrap_form pass_form %} {% endcomment %}
+    {% buttons %}
+        <button type="submit">Update</button>
+    {% endbuttons %}
+</form><br>
+<a href='change_password'>Change Password</a>
+

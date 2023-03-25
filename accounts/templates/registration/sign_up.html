@@ -1,0 +1,14 @@
+{% extends "base_generic.html" %}
+{% load bootstrap4 %}
+{% block content %}
+
+
+
+  <form method="post" > {% comment %} action="{% url 'home' %}" {% endcomment %}
+    {% csrf_token %}
+    {% bootstrap_form form %}
+    <input type="submit" value="Signup">
+  </form>
+  <p><a href="/accounts/login">Already have an account?</a></p>
+
+{% endblock %}
