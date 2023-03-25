@@ -225,7 +225,7 @@ class EditPatientProfile (generics.RetrieveUpdateAPIView):
         
 class RegisterAsDoctorAPI(generics.CreateAPIView):
     # queryset = Doctor.objects.all()
-    serializer_class = RegifsterSerializerAsDoctor
+    serializer_class = RegisterSerializerAsDoctor
     permission_classes = (AllowAny,)
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -345,10 +345,13 @@ class LoginAPI(ObtainAuthToken):
         except:
             return Response({"status":False,"data":None,"message":"Username Or Password is Wrong."},status=status.HTTP_400_BAD_REQUEST)
         # login(request,user)
-        return Response({
-            'accesToken': token.key,
-            'user_id': user.pk,
-            'type': user.typ.typ
+        return Response({"status":True,
+                         "data":{
+                            'accesToken': token.key,
+                            'user_id': user.pk,
+                            'type': user.typ.typ
+                            },
+                         "message":"login success."
         },status=status.HTTP_200_OK)
 
 class LogoutAPI(generics.CreateAPIView):
