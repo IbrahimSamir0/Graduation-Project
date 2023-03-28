@@ -73,7 +73,7 @@ class ingredient_interaction (models.Model):
     status = models.ForeignKey(Interaction_status, on_delete=models.CASCADE)
 
 class StandardDrugs(models.Model):
-    name=models.CharField(("Drug name"), max_length=100)
+    name=models.CharField(("Drug name"), max_length=100,db_index=True)
     desease=models.CharField(("Desease name"), max_length=100)
     sideEffects=models.TextField(("Side Effects"),max_length=1000)
     description=models.TextField(("Description"),max_length=1000)

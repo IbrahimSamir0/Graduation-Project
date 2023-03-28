@@ -160,7 +160,7 @@ class UserInheritance(models.Model):
         )
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
-    date_birth = models.DateField()
+    date_birth = models.DateField(null=True)
     phone = models.CharField(max_length=11,validators=([phoneValidate]))
     city = models.CharField(max_length=30, choices=CITIES)
     avatar = models.TextField(blank= True)

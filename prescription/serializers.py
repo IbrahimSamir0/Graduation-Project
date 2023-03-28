@@ -72,9 +72,15 @@ class GetPatientSerializer(serializers.ModelSerializer):
         
 class SetDrugSerializer(serializers.ModelSerializer):
     # prescription=SetPrescriptionSerializer()
+    drug_name = serializers.CharField()
     class Meta:
         model = Drug
-        fields = ['drug','end_in','dose_per_hour']
+        fields = ['drug_name','end_in','dose_per_hour']
+
+class GetAllStandardDrugsNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StandardDrugs
+        fields=['name']
 
 class GetScreenSerialzer(serializers.ModelSerializer):
     class Meta:

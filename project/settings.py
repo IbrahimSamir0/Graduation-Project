@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-&u2l@biyjmojd3lxpyuc(y68zh*e)%69y7hllk$m4dnuua-9sr
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['c823-102-184-106-141.eu.ngrok.io']
+ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -240,3 +240,13 @@ AUTHENTICATION_BACKENDS =['accounts.backends.EmailBackend',]
 
 
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# CACHES = {
+#     'default': {
+#         'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+#         'LOCATION': '/var/tmp/django_cache',
+#         'OPTIONS': {
+#             'MAX_ENTRIES': 1000
+#         }
+#     }
+# }

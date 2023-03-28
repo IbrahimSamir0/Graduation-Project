@@ -26,7 +26,7 @@ from io import StringIO
 from base64 import b64decode
 from django.core.files.base import ContentFile  
 from datetime import date , timedelta
-
+from django.core.cache import cache
 
 
 class MakePrescription(viewsets.ModelViewSet):
@@ -135,6 +135,31 @@ class GetCurentClinicalForPatient(generics.ListAPIView):
         serializer = self.serializer_class(clinicals,many = True)
         return Response({"status":True,"data":serializer.data,"message":"OK"},status=status.HTTP_200_OK)
 
+class GetAllStandardDrugsName(generics.ListAPIView):
+    permission_classes=[IsDoctor,]
+    authentication_classes = [TokenAuthentication,]
+    serializer_class = GetAllStandardDrugsNameSerializer
+    def get(self, request):
+        try:
+            standard_drugs=StandardDrugs.objects.all().values_list('name', flat=True)
+            
+            return Response({"status":True,"data":self.cache(standard_drugs),"message":"Ok"},status=status.HTTP_200_OK)
+        except StandardDrugs.DoesNotExist:
+            return Response({"status":False,"data":None,"message":"No Drugs in the system yet"},status=status.HTTP_200_OK)
+    def cache(self,standard_drugs):
+        data = cache.get('standard_drugs')
+        if data is None:
+            data = standard_drugs
+            cache.set('standard_drugs',data,timeout =3600)
+        return standard_drugs
+
+class GetAllStandardDrugsNameFilter(generics.CreateAPIView):
+    permission_classes=[IsDoctor,]
+    authentication_classes = [TokenAuthentication,]
+    def post(self, request):
+        word = request.data['word']
+        standard_drugs=StandardDrugs.objects.filter(name__startswith=word).values_list('name', flat=True)
+        return Response({"status":True,"data":standard_drugs,"message":"Ok"},status=status.HTTP_200_OK)
 
 class SetPrescription(generics.CreateAPIView):
     permission_classes = [IsDoctor,]
@@ -144,7 +169,10 @@ class SetPrescription(generics.CreateAPIView):
         serializer =self.serializer_class(data=request.data)
         # drug_serializer = self.serializer_class(data=request.data['drug'])
         doctor = Doctor.objects.get(id = request.user.id)
-        patient = Patient.objects.get(id= patient_id)
+        try:
+            patient = Patient.objects.get(id= patient_id)
+        except Patient.DoesNotExist:
+            return Response({"message":"No patient with this id."},status=status.HTTP_400_BAD_REQUEST)
         serializer.is_valid(raise_exception= True)
         drugs= serializer.validated_data.pop('drugs')
         screens = serializer.validated_data.pop('screens')
@@ -161,9 +189,19 @@ class SetPrescription(generics.CreateAPIView):
             )
         
         for drug in drugs:
+            try:
+                _drug = StandardDrugs.objects.get(name=drug['drug_name'])
+            except StandardDrugs.DoesNotExist:
+                return Response({"status":False,
+                                 "data":None,
+                                 "message":"No Drug with this name"},
+                                status=status.HTTP_404_NOT_FOUND)
             Drug.objects.create(
                 prescription = prescription,
-                **drug
+                # **drug
+                drug = _drug,
+                end_in = drug['end_in'],
+                dose_per_hour = drug['dose_per_hour']
                 )
         for screen in screens:
             Screen.objects.create(
@@ -368,7 +406,7 @@ class GetScreen(generics.ListAPIView):
         serializer = self.serializer_class(screen,many = False)
         return Response(serializer.data,status=status.HTTP_200_OK)
         
-        
+
 class GetDoctorPatients(generics.ListAPIView):
     authentication_classes =[ TokenAuthentication,]
     permission_classes= [IsDoctor,]
