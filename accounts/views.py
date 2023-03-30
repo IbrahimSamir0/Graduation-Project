@@ -58,7 +58,7 @@ def doctorSignUp(request):
     else :
         form = DoctorSignUpForm()
     context = {'form':form}
-    return render(request,'registration/sign_up.html',context)
+    return render(request,'registration/login.html',context)
 
 
 

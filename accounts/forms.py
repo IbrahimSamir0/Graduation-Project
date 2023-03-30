@@ -11,7 +11,7 @@ class PatientSignUpForm(UserCreationForm):
 class DoctorSignUpForm(UserCreationForm):
     class Meta:
         model = Doctor
-        fields = ['first_name','last_name','doctor_number','username','password1','password2']
+        fields = ['first_name','last_name','username','password1','password2']
         
 # class UserForm(forms.ModelForm):
 #     class Meta:

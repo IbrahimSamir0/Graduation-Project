@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-&u2l@biyjmojd3lxpyuc(y68zh*e)%69y7hllk$m4dnuua-9sr
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['7d0e-102-186-187-82.eu.ngrok.io']
 
 
 # Application definition
@@ -47,6 +47,8 @@ INSTALLED_APPS = [
     'django_rest_passwordreset',
     'django_apscheduler',
     'corsheaders',
+    
+    'social_django',
 
     #installed apps :
     'home',
@@ -54,39 +56,8 @@ INSTALLED_APPS = [
     'prescription',
 ]
 
-
-#with token
-
-# REST_FRAMEWORK ={
-#     'DEFAULT_AUTHENTICATION_CLASSES': (
-#         'rest_framework.authentication.TokenAuthentication',
-#     ),
-#     # 'DEFAULT_PERMISSION_CLASSES': 
-#     #     ['rest_framework.permissions.IsAuthenticated'],
-# }
-
-
-
-# REST_FRAMEWORK = {
-#     'DEFAULT_AUTHENTICATION_CLASSES': [
-#         # 'rest_framework.authentication.BasicAuthentication',
-#         # 'rest_framework.authentication.SessionAuthentication',
-#         'knox.auth.TokenAuthentication',
-#     ]
-# }
-
-#general
-
-# REST_FRAMEWORK ={
-    # 'DEFAULT_AUTHENTICATION_CLASSES':
-    #     ['rest_framework.authentication.BasicAuthentication'],
-    # 'DEFAULT_PERMISSION_CLASSES': 
-    #     ['rest_framework.permissions.IsAuthenticated'],
-# }
-
-# AllowAny //  IsAuthenticated //  IsAdminuser  //  IsAuthenticatedReadOnly
-
-
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 REST_FRAMEWORK = {
     "DEFAULT_PARSER_CLASSES": (
         "rest_framework.parsers.JSONParser",
@@ -119,13 +90,13 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-
+    'social_django.middleware.SocialAuthExceptionMiddleware',
     
 ]
 
 ROOT_URLCONF = 'project.urls'
 
-CORS_ALLOW_ALL_ORIGINS= True
+
 # CORS_ORIGIN_WHITELIST=('http://localhost:8080',)
 # CORS_ALLOWED_ORIGINS = [
 #     'http://localhost:8080',
@@ -143,6 +114,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',   
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'social_django.context_processors.backends',  # <-- Here
+                'social_django.context_processors.login_redirect', # <-- Here
             ],
         },
     },
@@ -236,11 +209,23 @@ PASSWORD_RESET_TIMEOUT = 14400
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-AUTHENTICATION_BACKENDS =['accounts.backends.EmailBackend',]
+AUTHENTICATION_BACKENDS =['accounts.backends.EmailBackend',
+                          
+                        'social_core.backends.facebook.FacebookOAuth2',
+                        'social_core.backends.twitter.TwitterOAuth',
+                        'social_core.backends.github.GithubOAuth2',
 
+                        'django.contrib.auth.backends.ModelBackend',
+                        ]
 
+LOGIN_URL = 'login'
+LOGOUT_URL = 'logout'
+LOGIN_REDIRECT_URL = 'home'
+
+SOCIAL_AUTH_FACEBOOK_KEY = '489638043241073'  # App ID
+SOCIAL_AUTH_FACEBOOK_SECRET = '676207c3c6938667a372d3c159df463e'  # App Secret
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
+#  <a href="{% url 'social:begin' 'facebook' %}">Login with Facebook</a>
 # CACHES = {
 #     'default': {
 #         'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
