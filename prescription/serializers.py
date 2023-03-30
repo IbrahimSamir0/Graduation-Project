@@ -72,6 +72,13 @@ class GetPatientSerializer(serializers.ModelSerializer):
         
 class SetDrugSerializer(serializers.ModelSerializer):
     # prescription=SetPrescriptionSerializer()
+    # drug_name = serializers.CharField()
+    class Meta:
+        model = Drug
+        fields = ['drug','end_in','dose_per_hour']
+        
+class SetDrugNameSerializer(serializers.ModelSerializer):
+    # prescription=SetPrescriptionSerializer()
     drug_name = serializers.CharField()
     class Meta:
         model = Drug
@@ -103,7 +110,7 @@ class GetMedicalAnalysisSerializer(serializers.ModelSerializer):
         fields =['standard_medical_analysis','deadline','image']
         
 class SetPrescriptionSerializer(serializers.ModelSerializer):
-    drugs= SetDrugSerializer(many = True)
+    drugs= SetDrugNameSerializer(many = True)
     screens = SetScreenSerializer(many = True)
     medical_analysis =SetMedicalAnalysisSerializer(many = True)
     class Meta:

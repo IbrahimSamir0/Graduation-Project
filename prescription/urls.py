@@ -11,8 +11,12 @@ urlpatterns = [
     path('postScreen',views.postScreen, name='postScreen'),
     # path('view',views.viewOldPrescriptions, name='ViewOldPrescriptions'),
     path('postscreens',views.upload_image, name='PostScreen'),
-    path('get_doctor_patients/',views.GetDoctorPatients.as_view(), name='GetDoctorPatients'),
-    path('get_doctor_patients/<int:p_id>/',views.GetSpecificDoctorPatientPrescription.as_view(), name='GetSpecificDoctorPatientPrescription'),
+    
+    path('get_active_doctor_patients/',views.GetActiveDoctorPatients.as_view(), name='GetActiveDoctorPatients'),
+    path('get_old_doctor_patients/',views.GetOldDoctorPatients.as_view(), name='GetOldDoctorPatients'),
+    path('get_all_doctor_patients/',views.GetAllDoctorPatients.as_view(), name='GetAllDoctorPatients'),
+    
+    path('get_doctor_patient_specific_prescription/<int:p_id>/',views.GetSpecificDoctorPatientPrescription.as_view(), name='GetSpecificDoctorPatientPrescription'),
     path('getscreen',views.GetScreen.as_view(), name='GetScreen'),
     path('cancel_my_Prescription/',views.CancelMyPrescription.as_view(), name='cancel_my_Prescription'),
     path('get_my_active_prescription/',views.GetMyActivePrescription.as_view(), name='GetMyActivePrescription'),

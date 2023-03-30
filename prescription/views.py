@@ -407,32 +407,69 @@ class GetScreen(generics.ListAPIView):
         return Response(serializer.data,status=status.HTTP_200_OK)
         
 
-class GetDoctorPatients(generics.ListAPIView):
+class GetActiveDoctorPatients(generics.ListAPIView):
     authentication_classes =[ TokenAuthentication,]
     permission_classes= [IsDoctor,]
     serializer_class =GetPrescriptionDoctorPatientClinicalSerializer
-    # queryset= Prescription.objects.all()
     def get(self,request):
-        current_doctor = Doctor.objects.get(id = request.user.id)
-        try:
-            today_prescriptions =Prescription.objects.filter(doctor = current_doctor.id, next_consultation=date.today())
-        except Prescription.DoesNotExist:
-            return Response({'Today_patients':'Do not exist'})
-        try:
-            prescriptions= Prescription.objects.filter(doctor = current_doctor.id, cancelation_date__isnull=True).order_by('-next_consultation')
-            # users = User.objects.filter(id = patients.first().id)
-        except Prescription.DoesNotExist:
-            return Response({'other_patients':'Do not exist'})
+        doctor = Doctor.objects.get(id = request.user.id)
+        active_patients= Prescription.objects.filter(doctor = doctor.id, cancelation_date__isnull=True).order_by('-next_consultation')
+        if not active_patients :
+            return Response({"status":False,"data":None,'message':'Active patients do not exist'})
+        unique_patients = []
+        unique_ids = set()
+        for patient in active_patients:
+            if patient.patient.id not in unique_ids:
+                unique_patients.append(patient)
+                unique_ids.add(patient.patient.id)   
+        serializer =self.serializer_class(unique_patients,many = True)        
+        return Response({"status":True,
+                            "data":serializer.data,
+                            "message":"These are active patients"},
+                        status=status.HTTP_200_OK)
         
-        # serializer=serializers.serialize("json",patients)
-        today_serializer =self.serializer_class(today_prescriptions,many = True)
-        serializer =self.serializer_class(prescriptions,many = True)
-        # serializeru=serializers.serialize("json",users)
-        # mab = json.loads(serializer)
-        # clinicals= Clinical.objects.filter(doctor=request.user.id)
-        # clinicals_serialize = serializers.serialize("json",clinicals)
-        return Response({"Today_patients":today_serializer.data,"other_patients":serializer.data},status=status.HTTP_200_OK)
-
+class GetOldDoctorPatients(generics.ListAPIView):
+    authentication_classes =[ TokenAuthentication,]
+    permission_classes= [IsDoctor,]
+    serializer_class =GetPrescriptionDoctorPatientClinicalSerializer
+    def get(self,request):
+        doctor = Doctor.objects.get(id = request.user.id)
+        old_patients= Prescription.objects.filter(doctor = doctor.id, cancelation_date__isnull=False).order_by('-next_consultation')
+        if not old_patients :
+            return Response({"status":False,"data":None,'message':'Old patients do not exist'})
+        unique_patients = []
+        unique_ids = set()
+        for patient in old_patients:
+            if patient.patient.id not in unique_ids:
+                unique_patients.append(patient)
+                unique_ids.add(patient.patient.id)   
+        serializer =self.serializer_class(unique_patients,many = True)
+        return Response({"status":True,
+                            "data":serializer.data,
+                            "message":"These are Old patients"},
+                        status=status.HTTP_200_OK)
+        
+class GetAllDoctorPatients(generics.ListAPIView):
+    authentication_classes =[ TokenAuthentication,]
+    permission_classes= [IsDoctor,]
+    serializer_class =GetPrescriptionDoctorPatientClinicalSerializer
+    def get(self,request):
+        doctor = Doctor.objects.get(id = request.user.id)
+        All_patients= Prescription.objects.filter(doctor = doctor.id)
+        if not All_patients :
+            return Response({"status":False,"data":None,'message':'All patients do not exist'})
+        unique_patients = []
+        unique_ids = set()
+        for patient in All_patients:
+            if patient.patient.id not in unique_ids:
+                unique_patients.append(patient)
+                unique_ids.add(patient.patient.id)           
+        serializer =self.serializer_class(unique_patients,many = True)
+        return Response({"status":True,
+                            "data":serializer.data,
+                            "message":"These are All patients"},
+                        status=status.HTTP_200_OK)
+        
 class GetSpecificDoctorPatientPrescription(generics.ListAPIView):
     authentication_classes =[ TokenAuthentication,]
     permission_classes= [IsDoctor,]

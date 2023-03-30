@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-&u2l@biyjmojd3lxpyuc(y68zh*e)%69y7hllk$m4dnuua-9sr
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['7d0e-102-186-187-82.eu.ngrok.io']
+ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -55,9 +55,12 @@ INSTALLED_APPS = [
     'contact',
     'prescription',
 ]
-
-CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOW_CREDENTIALS = True
+CORS_ORIGIN_ALLOW_ALL = True
+# CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOW_CREDENTIALS = True
+# Access-Control-Allow-Origin: *
+# Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
+# Access-Control-Allow-Headers: Content-Type, Authorization
 REST_FRAMEWORK = {
     "DEFAULT_PARSER_CLASSES": (
         "rest_framework.parsers.JSONParser",
@@ -96,12 +99,10 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'project.urls'
 
-
 # CORS_ORIGIN_WHITELIST=('http://localhost:8080',)
 # CORS_ALLOWED_ORIGINS = [
 #     'http://localhost:8080',
 # ]
-
 
 TEMPLATES = [
     {
@@ -202,20 +203,12 @@ EMAIL_USE_TLS = True
 
 PASSWORD_RESET_TIMEOUT = 14400
 
-
-
-
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTHENTICATION_BACKENDS =['accounts.backends.EmailBackend',
-                          
-                        'social_core.backends.facebook.FacebookOAuth2',
-                        'social_core.backends.twitter.TwitterOAuth',
-                        'social_core.backends.github.GithubOAuth2',
 
-                        'django.contrib.auth.backends.ModelBackend',
                         ]
 
 LOGIN_URL = 'login'

@@ -27,14 +27,14 @@ urlpatterns = [
     # path('profile/edit/',views.editProfile, name='edit_profile'),
     # path('profile/edit/change_password',views.changePass, name='edit_profile'),
     # path('activate/<uidb64>/<token>', helper.activate, name='activate'),
-    path('oauth/', include('social_django.urls', namespace='social')),  # <-- here
+    # path('oauth/', include('social_django.urls', namespace='social')),  # <-- here
        
         # #API
     path('api/patient_profile/register/',api.RegisterAsPatientAPI.as_view()),
     path('api/patient_profile/edit/',api.EditPatientProfile.as_view()),
     path('api/patient_my_profile/',api.MyProfilePatient.as_view(), name='MyProfilePatient'),
     path('api/my_patient_profile/',api.patient_list, name='PatientListAPI'),
-    path('api/my_patient_profile/<int:id>',api.FBV_pk_patient, name='PatientprofileDetailAPI'),
+    path('api/my_patient_profile/<int:id>/',api.FBV_pk_patient, name='PatientprofileDetailAPI'),
     # path('api/my_patient_profile/<int:patient_id>/make_prescription/',views.SetPrescription.as_view(), name='PatientprofileDetailAPI'),
     
     # path('api/get_doctor_clinicals/',views.GetCurentClinicalForPatient.as_view(),name='GetCurentClinicalForPatient'),

@@ -77,7 +77,7 @@ def patient_list(request):
 #     authentication_classes=[TokenAuthentication]
 
 
-@api_view(['GET', 'PUT'])
+@api_view(['GET'])
 @authentication_classes([TokenAuthentication])
 def FBV_pk_patient(request,id):
     try:
@@ -89,13 +89,13 @@ def FBV_pk_patient(request,id):
         patient_data = PatientSerializer(patient)
         return Response(patient_data.data)
     
-    #PUT
-    elif request.method == 'PUT':
-        patient_data =PatientSerializer(patient,data= request.data)
-        if (patient_data.is_valid()):
-            patient_data.save()
-            return Response(patient_data.data)
-        return Response(Patient.errors,status= status.HTTP_400_BAD_REQUEST)
+    # #PUT
+    # elif request.method == 'PUT':
+    #     patient_data =PatientSerializer(patient,data= request.data)
+    #     if (patient_data.is_valid()):
+    #         patient_data.save()
+    #         return Response(patient_data.data)
+    #     return Response(Patient.errors,status= status.HTTP_400_BAD_REQUEST)
     
     # #DELETE
     # elif request.method == 'DELETE':    
