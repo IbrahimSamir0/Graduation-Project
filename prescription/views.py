@@ -133,7 +133,7 @@ class GetCurentClinicalForPatient(generics.ListAPIView):
         except Clinical.DoesNotExist:
             return Response({"status":False,"data":None,"message":"No Clinicals yet."},status=status.HTTP_404_NOT_FOUND)
         serializer = self.serializer_class(clinicals,many = True)
-        return Response({"status":True,"data":serializer.data,"message":"OK"},status=status.HTTP_200_OK)
+        return Response({"status":True,"data":serializer.data,"message":"successful"},status=status.HTTP_200_OK)
 
 class GetAllStandardDrugsName(generics.ListAPIView):
     permission_classes=[IsDoctor,]
@@ -159,7 +159,7 @@ class GetAllStandardDrugsNameFilter(generics.CreateAPIView):
     def post(self, request):
         word = request.data['word']
         standard_drugs=StandardDrugs.objects.filter(name__startswith=word).values_list('name', flat=True)
-        return Response({"status":True,"data":standard_drugs,"message":"Ok"},status=status.HTTP_200_OK)
+        return Response({"status":True,"data":standard_drugs,"message":"successful"},status=status.HTTP_200_OK)
 
 class SetPrescription(generics.CreateAPIView):
     permission_classes = [IsDoctor,]
@@ -425,7 +425,7 @@ class GetActiveDoctorPatients(generics.ListAPIView):
         serializer =self.serializer_class(unique_patients,many = True)        
         return Response({"status":True,
                             "data":serializer.data,
-                            "message":"These are active patients"},
+                            "message":"successful"},
                         status=status.HTTP_200_OK)
         
 class GetOldDoctorPatients(generics.ListAPIView):
@@ -446,7 +446,7 @@ class GetOldDoctorPatients(generics.ListAPIView):
         serializer =self.serializer_class(unique_patients,many = True)
         return Response({"status":True,
                             "data":serializer.data,
-                            "message":"These are Old patients"},
+                            "message":"successful"},
                         status=status.HTTP_200_OK)
         
 class GetAllDoctorPatients(generics.ListAPIView):
@@ -457,7 +457,7 @@ class GetAllDoctorPatients(generics.ListAPIView):
         doctor = Doctor.objects.get(id = request.user.id)
         All_patients= Prescription.objects.filter(doctor = doctor.id)
         if not All_patients :
-            return Response({"status":False,"data":None,'message':'All patients do not exist'})
+            return Response({"status":False,"data":None,'message':'No Patients to display.'})
         unique_patients = []
         unique_ids = set()
         for patient in All_patients:
@@ -467,7 +467,7 @@ class GetAllDoctorPatients(generics.ListAPIView):
         serializer =self.serializer_class(unique_patients,many = True)
         return Response({"status":True,
                             "data":serializer.data,
-                            "message":"These are All patients"},
+                            "message":"successful"},
                         status=status.HTTP_200_OK)
         
 class GetSpecificDoctorPatientPrescription(generics.ListAPIView):
@@ -614,7 +614,7 @@ class GetSpecificOldPrescription(generics.ListAPIView):
 class SetAppointmentForDoctors(generics.CreateAPIView):
     permission_classes = [IsDoctor,]
     authentication_classes = [TokenAuthentication,]
-    serializer_class= BookingSerializer
+    serializer_class= PostBookingSerializer
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -624,27 +624,20 @@ class SetAppointmentForDoctors(generics.CreateAPIView):
         for obj in doctor_clinicals:
             id_list.append(obj.id)
         if serializer.validated_data['clinical'].id not in id_list:
-            print(id_list)
-            return Response("clinical not found",status=status.HTTP_404_NOT_FOUND)
-        clinical = serializer.validated_data['clinical']
-        date = serializer.validated_data['date']
-        start = serializer.validated_data['start']
-        end = serializer.validated_data['end']
-        allowed_number = serializer.validated_data['allowed_number']
-        Booking.objects.create(
-            doctor=doctor,
-            clinical=clinical,
-            date=date,
-            start=start,
-            end  =end,
-            allowed_number =allowed_number,
-        )
-        return Response(serializer.data,status=status.HTTP_201_CREATED)
-    
+            return Response({"status":False,
+                                "data":None,
+                                "message":"Clinic Not found"}
+                                ,status=status.HTTP_404_NOT_FOUND)
+        clinical=Clinical.objects.get(id=serializer.validated_data['clinical'].id)
+        serializer.save(doctor,clinical)
+        return Response({"status":True,
+                             "data":serializer.data,
+                             "message":"Success"}
+                            ,status=status.HTTP_201_CREATED)       
 class ModifySpecificAppointmentForDoctor(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsDoctor,]
     authentication_classes = [TokenAuthentication,]
-    serializer_class= BookingSerializer
+    serializer_class= PostBookingSerializer
     def get(self, request,id):
         doctor =Doctor.objects.get(id= request.user.id)
         my_appointments = Booking.objects.filter(doctor =doctor)
@@ -652,11 +645,16 @@ class ModifySpecificAppointmentForDoctor(generics.RetrieveUpdateDestroyAPIView):
         for obj in my_appointments:
             id_list.append(obj.id)
         if id not in id_list:
-            return Response("Appointment not dound",status=status.HTTP_404_NOT_FOUND)
+            return Response({"status":True,
+                             "data":None,
+                             "message":"Appointment not dound"}
+                            ,status=status.HTTP_404_NOT_FOUND)  
         appointment =Booking.objects.get(id=id)
-        serializer = self.serializer_class(appointment)
-        return Response(serializer.data,status=status.HTTP_200_OK)
-    
+        serializer = BookingSerializer(appointment)
+        return Response({"status":True,
+                             "data":serializer.data,
+                             "message":"Success"}
+                            ,status=status.HTTP_200_OK)      
     def put(self, request,id):
         serializer =self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -666,23 +664,32 @@ class ModifySpecificAppointmentForDoctor(generics.RetrieveUpdateDestroyAPIView):
         for obj in my_appointments:
             id_list.append(obj.id)
         if id not in id_list:
-            return Response("Appointment not dound",status=status.HTTP_404_NOT_FOUND)
+            return Response({"status":True,
+                             "data":None,
+                             "message":"Appointment not dound"}
+                            ,status=status.HTTP_404_NOT_FOUND)  
+        today = timezone.now().date()
+        weekday = serializer.validated_data['available_day_of_week']
+        days_until_available_day = (weekday - today.weekday()) % 7
+        available_date = today + datetime.timedelta(days=days_until_available_day)
         appointment =Booking.objects.get(id=id)
         clinical = serializer.validated_data['clinical']
-        date = serializer.validated_data['date']
+        # date = serializer.validated_data['date']
         start = serializer.validated_data['start']
         end = serializer.validated_data['end']
         allowed_number = serializer.validated_data['allowed_number']
         appointment.clinical=clinical
-        appointment.date=date
+        appointment.date=available_date
         appointment.start=start
         appointment.start=start
         appointment.end=end
         appointment.allowed_number=allowed_number
         appointment.save()
         # serializer.save()
-        return Response(serializer.data,status=status.HTTP_200_OK)
-    
+        return Response({"status":True,
+                             "data":None,
+                             "message":"Success"}
+                            ,status=status.HTTP_200_OK)      
     def delete(self, request,id):
         doctor =Doctor.objects.get(id= request.user.id)
         my_appointments = Booking.objects.filter(doctor =doctor)
@@ -690,11 +697,16 @@ class ModifySpecificAppointmentForDoctor(generics.RetrieveUpdateDestroyAPIView):
         for obj in my_appointments:
             id_list.append(obj.id)
         if id not in id_list:
-            return Response("Appointment not dound",status=status.HTTP_404_NOT_FOUND)
+            return Response({"status":True,
+                             "data":None,
+                             "message":"Appointment not dound"}
+                            ,status=status.HTTP_404_NOT_FOUND)  
         appointment =Booking.objects.get(id=id)
         appointment.delete()
-        return Response("appointment has been deleted",status=status.HTTP_200_OK)
-    
+        return Response({"status":True,
+                             "data":None,
+                             "message":"Success"}
+                            ,status=status.HTTP_200_OK)      
 class GetMyAllAppointmentsForDoctor(generics.ListAPIView):
     permission_classes = [IsDoctor,]
     authentication_classes = [TokenAuthentication,]
@@ -702,10 +714,118 @@ class GetMyAllAppointmentsForDoctor(generics.ListAPIView):
     def get(self, request):
         doctor = Doctor.objects.get(id = request.user.id)
         my_all_appointments = Booking.objects.filter(doctor=doctor)
+        if not my_all_appointments:
+            return Response({"status":False,
+                        "data":None,
+                        "message":"No Appointments Yet."},
+                    status=status.HTTP_404_NOT_FOUND)
         serializer = self.serializer_class(my_all_appointments,many = True)
-        return Response(serializer.data,status=status.HTTP_200_OK)
+        return Response({"status":True,
+                        "data":serializer.data,
+                        "message":"success"},
+                    status=status.HTTP_200_OK)
+        
+class ListClinical(generics.ListCreateAPIView):
+    permission_classes = [IsDoctor,]
+    authentication_classes = [TokenAuthentication,]
+    serializer_class= ListClinicalSerializer
+    def get(self, request):
+        doctor = Doctor.objects.get(id = request.user.id)
+        my_all_clinics = Clinical.objects.filter(doctor=doctor).order_by('-id')
+        if not my_all_clinics:
+            return Response({"status":False,
+                            "data":None,
+                            "message":"No clinics Yet"},
+                        status=status.HTTP_404_NOT_FOUND)
+        serializer = self.serializer_class(my_all_clinics,many = True)
+        return Response({"status":True,
+                            "data":serializer.data,
+                            "message":"successful"},
+                        status=status.HTTP_200_OK)    
+    def create(self, request):
+        doctor = Doctor.objects.get(id = request.user.id)
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        new_clinic=Clinical.objects.create(
+            clinical_name=serializer.validated_data['clinical_name'],
+            clinical_location=serializer.validated_data['clinical_location'],
+            telephone=serializer.validated_data['telephone'],
+            phone=serializer.validated_data['phone'],
+            doctor=doctor
+        )
+        data=self.serializer_class(new_clinic,many=False)
+        return Response({"status":True,
+                    "data":data.data,
+                    "message":"successful"},
+                status=status.HTTP_200_OK)  
         
         
+        
+class GetSpecificClinical(generics.ListAPIView):
+    permission_classes = [IsDoctor,]
+    authentication_classes = [TokenAuthentication,]
+    serializer_class= UpdateSpecificClinicalSerializer
+    
+    def get(self, request,id):
+        doctor = Doctor.objects.get(id = request.user.id)
+        try:
+            specific_clinical=Clinical.objects.get(id=id)
+            if specific_clinical.doctor.id != doctor.id:
+                return Response({"status":False,
+                                "data":None,
+                                "message":"You have not clinic with this ID"},
+                            status=status.HTTP_404_NOT_FOUND)
+        except Clinical.DoesNotExist:
+            return Response({"status":False,
+                                "data":None,
+                                "message":"You have not clinic with this ID"},
+                            status=status.HTTP_404_NOT_FOUND)
+        serializer = self.serializer_class(specific_clinical,many = False)
+        return Response({"status":True,
+                            "data":serializer.data,
+                            "message":"successful"},
+                        status=status.HTTP_200_OK) 
+    def put(self,request,id):
+        doctor = Doctor.objects.get(id = request.user.id)
+        try:
+            specific_clinical=Clinical.objects.get(id=id)
+            if specific_clinical.doctor.id != doctor.id:
+                return Response({"status":False,
+                                "data":None,
+                                "message":"You have not clinic with this ID"},
+                            status=status.HTTP_404_NOT_FOUND)
+        except Clinical.DoesNotExist:
+            return Response({"status":False,
+                                "data":None,
+                                "message":"You have not clinic with this ID"},
+                            status=status.HTTP_404_NOT_FOUND)
+        serializer = self.serializer_class(specific_clinical,data=request.data,partial= True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"status":True,
+                            "data":None,
+                            "message":"successful"},
+                        status=status.HTTP_200_OK)   
+    
+    def delete(self,request,id):
+        doctor = Doctor.objects.get(id = request.user.id)
+        try:
+            specific_clinical=Clinical.objects.get(id=id)
+            if specific_clinical.doctor.id != doctor.id:
+                return Response({"status":False,
+                                "data":None,
+                                "message":"You have not clinic with this ID"},
+                            status=status.HTTP_404_NOT_FOUND)
+        except Clinical.DoesNotExist:
+            return Response({"status":False,
+                                "data":None,
+                                "message":"You have not clinic with this ID"},
+                            status=status.HTTP_404_NOT_FOUND)
+        specific_clinical.delete()
+        return Response({"status":True,
+                            "data":None,
+                            "message":"successful"},
+                        status=status.HTTP_200_OK)  
 # api_view(['GET','POST'])
 # def makePrescription(request):
 #     if request.method == 'GET':

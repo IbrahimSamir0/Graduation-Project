@@ -2,7 +2,7 @@ from django.urls import include,path
 from . import views
 from . import helper
 from . import api
-# from prescription import views
+from prescription import views
 # from knox import views as knox_views
 from django.conf.urls import include
 from django.contrib.auth.decorators import login_required
@@ -22,7 +22,7 @@ app_name='accounts'
 urlpatterns = [
     # path ('',include(router.urls)),
     # path('signup_as_patient',views.patientSignUp, name='signup'),
-    path('signup_as_doctor',views.doctorSignUp, name='signup_as_doctor'),
+    # path('signup_as_doctor',views.doctorSignUp, name='signup_as_doctor'),
     # path('profile/',views.profile, name='patient_profile'),
     # path('profile/edit/',views.editProfile, name='edit_profile'),
     # path('profile/edit/change_password',views.changePass, name='edit_profile'),
@@ -35,7 +35,8 @@ urlpatterns = [
     path('api/patient_my_profile/',api.MyProfilePatient.as_view(), name='MyProfilePatient'),
     path('api/my_patient_profile/',api.patient_list, name='PatientListAPI'),
     path('api/my_patient_profile/<int:id>/',api.FBV_pk_patient, name='PatientprofileDetailAPI'),
-    # path('api/my_patient_profile/<int:patient_id>/make_prescription/',views.SetPrescription.as_view(), name='PatientprofileDetailAPI'),
+    
+    path('api/my_patient_profile/<int:patient_id>/make_prescription/',views.SetPrescription.as_view(), name='PatientprofileDetailAPI'),
     
     # path('api/get_doctor_clinicals/',views.GetCurentClinicalForPatient.as_view(),name='GetCurentClinicalForPatient'),
     

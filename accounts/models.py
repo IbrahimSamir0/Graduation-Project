@@ -218,7 +218,7 @@ class Doctor(User,UserInheritance):
         ratingDetails=[]
         for r in rating:
             all_name=r.patient.first_name+' '+r.patient.last_name
-            s={"name":all_name,"stars":r.stars,"feedback":r.feedback}
+            s={"name":all_name,"stars":r.stars,"feedback":r.feedback,'date':r.date}
             ratingDetails.append(s)
         return ratingDetails
     
@@ -233,7 +233,7 @@ class Doctor(User,UserInheritance):
             return sum/ len(rating)
         else:
             return 0
-        
+
     
     class Meta:
         verbose_name = 'Doctor'
@@ -246,6 +246,7 @@ class Rating (models.Model):
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
     stars = models.PositiveSmallIntegerField(validators=[MinValueValidator(1),MaxValueValidator(5)])
     feedback = models.TextField(null=True,blank=True)
+    date =models.DateField(default=date.today())
     
     class Meta:
         unique_together =(('doctor','patient'),)

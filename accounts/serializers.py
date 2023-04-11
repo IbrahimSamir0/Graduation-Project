@@ -17,23 +17,23 @@ class DoctorSerializer(serializers.ModelSerializer):
     # user_type = Type()
     class Meta:
         model = Doctor
-        fields = ['username','first_name','last_name','phone','avatar','bio','about','city','price','numOfRating','avgRating','ratingDetails']
+        fields = ['username','email','first_name','last_name','phone','avatar','bio','about','city','price','numOfRating','avgRating','ratingDetails']
         
 class EditDoctorProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Doctor
-        fields=['username','first_name','last_name','city','price','avatar','bio','about']
+        fields=['username','first_name','last_name','city','price','avatar','bio','about','phone']
     
 class PatientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Patient
-        fields = ['id','doctor_id','email','username','first_name','last_name','get_age','phone','avatar','city']
+        fields = ['id','doctor_id','email','username','first_name','last_name','gender','get_age','phone','avatar','city']
         # extra_kwargs = {'password': {'write_only': True}}
         
 class EditPatientProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Patient
-        fields = ['username','first_name','last_name','avatar','city']
+        fields = ['username','first_name','last_name','avatar','city','phone']
 
 class ConfirmPasswordSerializer(serializers.Serializer):
     password_confirm = serializers.CharField(required = True)

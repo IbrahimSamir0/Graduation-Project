@@ -83,11 +83,12 @@ def FBV_pk_patient(request,id):
     try:
         patient = Patient.objects.get(id = id)
     except Patient.DoesNotExist:
-        return Response(status= status.HTTP_404_NOT_FOUND)
+        return Response({"status":False,"data":None,"message":"No patient with this id"},status= status.HTTP_404_NOT_FOUND)
     #GET
     if request.method == 'GET':    
         patient_data = PatientSerializer(patient)
-        return Response(patient_data.data)
+        return Response({"status":True,"data":patient_data.data,"message":"No patient with this id"},status=
+                        status.HTTP_200_OK)
     
     # #PUT
     # elif request.method == 'PUT':
@@ -246,14 +247,14 @@ class EditDoctorProfile(generics.RetrieveUpdateAPIView):
     def get(self, request):
         doctor = Doctor.objects.get(id= request.user.id)
         serializer = self.serializer_class(doctor)
-        return Response(serializer.data,status=status.HTTP_200_OK)
+        return Response({"status":True,"data":serializer.data,"message":"This is your profile data"},status=status.HTTP_200_OK)
     
     def put (self, request, *args, **kwargs):
         doctor = Doctor.objects.get(id= request.user.id)
         serializer = self.serializer_class(doctor,data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response (serializer.data,status=status.HTTP_202_ACCEPTED)
+        return Response ({"status":True,"data":serializer.data,"message":"your data changed successfully"},status=status.HTTP_200_OK)
 
 
 class MyProfileDoctor(generics.ListAPIView):
@@ -266,7 +267,7 @@ class MyProfileDoctor(generics.ListAPIView):
         except Exception as e :
             return Response(f'{e}',status=status.HTTP_404_NOT_FOUND)
         serializer = self.serializer_class(doctor,many=False)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({"status":True,"data":serializer.data,"message":"This is your profile"}, status=status.HTTP_200_OK)
             
 class DoctorRate(generics.CreateAPIView):
     # queryset= Doctor.objects.all()

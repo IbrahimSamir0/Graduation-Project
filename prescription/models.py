@@ -12,6 +12,27 @@ from django.db.models import Count
 
 
 # Create your models here.
+def phoneValidate(value):
+    numbers ='0123456789'
+    if len(value) == 11:
+        if value[0]=='0' and value[1]=='1' and (value[2]=='0' or value[2]=='1' or value[2]=='2' or value[2]=='5'):
+            for i in value:
+                if i not in numbers:
+                    raise ValidationError(
+                        _('%(value)s is not a valid phone number'),
+                        params={'value': value},
+                    )
+        else:
+            raise ValidationError(
+                        _('%(value)s is not valid a phone number'),
+                        params={'value': value},
+                    )
+    else:
+            raise ValidationError(
+                        _('%(value)s length is not 11 numbers.'),
+                        params={'value': value},
+                    )
+        
 
 
 def future_date_validator(value):
@@ -98,8 +119,8 @@ class Drug (models.Model):
 class Clinical (models.Model):
     clinical_name =models.CharField(_("Clinical name"), max_length=100)
     clinical_location = models.CharField(_("Clinical location"), max_length=255)
-    telephone = models.CharField(max_length=12,null=True)
-    phone= models.CharField(max_length=12,null=True)
+    telephone = models.CharField(max_length=11,null=True,blank=True,validators=([phoneValidate]))
+    phone= models.CharField(max_length=11,validators=([phoneValidate]))
     doctor= models.ForeignKey(Doctor, on_delete=models.CASCADE)
     
     class Meta:
@@ -160,6 +181,25 @@ class Booking(models.Model):
     start = models.TimeField()
     end = models.TimeField()
     allowed_number = models.PositiveSmallIntegerField()
+    
+    def getDayOfWeek(self):
+        obj = Booking.objects.get(id=self.id)
+        return obj.date.strftime('%A')
+    
+    def getDayOfWeekAsNumber(self):
+        obj = Booking.objects.get(id=self.id)
+        day = [7, 1, 2, 3, 4, 5, 6]  # List of integer values for each day of the week, starting with Monday = 2
+        day_of_week = day[obj.date.weekday()]  # Get the day of the week as an integer
+        return day_of_week
+    
+    def getStartTwelveMode(self):
+        obj=Booking.objects.get(id=self.id)
+        return obj.start.strftime('%I:%M %p')
+    
+    def getEndTwelveMode(self):
+        obj=Booking.objects.get(id=self.id)
+        return obj.end.strftime('%I:%M %p')
+    
     
     def numberOfPatients(self):
         num = PatientBooking.objects.filter(booking=self).aggregate(Count('id'))['id__count']

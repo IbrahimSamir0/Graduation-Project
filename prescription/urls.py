@@ -16,6 +16,8 @@ urlpatterns = [
     path('get_old_doctor_patients/',views.GetOldDoctorPatients.as_view(), name='GetOldDoctorPatients'),
     path('get_all_doctor_patients/',views.GetAllDoctorPatients.as_view(), name='GetAllDoctorPatients'),
     
+    path('get_my_all_clinics/',views.ListClinical.as_view(),name='ListClinical'),
+    path('get_my_all_clinics/<int:id>/',views.GetSpecificClinical.as_view(),name='ListClinical'),
     path('get_doctor_patient_specific_prescription/<int:p_id>/',views.GetSpecificDoctorPatientPrescription.as_view(), name='GetSpecificDoctorPatientPrescription'),
     path('getscreen',views.GetScreen.as_view(), name='GetScreen'),
     path('cancel_my_Prescription/',views.CancelMyPrescription.as_view(), name='cancel_my_Prescription'),
@@ -23,7 +25,7 @@ urlpatterns = [
     path('get_my_old_prescriptions/',views.GetMyOldPrescriptions.as_view(), name='GetMyOldPrescriptions'),
     path('get_my_old_prescriptions/<int:p_id>/',views.GetSpecificOldPrescription.as_view(), name='GetSpecificOldPrescription'),
     path('set_appointment_for_doctors/',views.SetAppointmentForDoctors.as_view(), name='SetAppointmentForDoctors'),
-    path('modify_appointment_for_doctors/<int:id>',views.ModifySpecificAppointmentForDoctor.as_view(), name='ModifySpecificAppointmentForDoctor'),
+    path('modify_appointment_for_doctors/<int:id>/',views.ModifySpecificAppointmentForDoctor.as_view(), name='ModifySpecificAppointmentForDoctor'),
     path('get_appointments_for_doctors/',views.GetMyAllAppointmentsForDoctor.as_view(), name='GetMyAllAppointmentsForDoctor'),
     path('get_all_standard_drugs/',views.GetAllStandardDrugsName.as_view(),name='GetAllStandardDrugsName'),
     path('get_all_standard_drugs_name_filter/',views.GetAllStandardDrugsNameFilter.as_view(),name='GetAllStandardDrugsName'),

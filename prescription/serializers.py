@@ -6,6 +6,8 @@ from rest_framework.response import Response
 from rest_framework import generics , status, filters ,viewsets
 from django.http.response import JsonResponse
 from rest_framework.fields import CurrentUserDefault
+from django.utils import timezone
+import datetime
 
 # class Clinicals(serializers.Serializer):
 #     clinicall = serializers.ChoiceField(choices=[Clinical.objects.get(doctor = 9)])    
@@ -45,6 +47,18 @@ class GetClinicalSerializer(serializers.ModelSerializer):
         model = Clinical
         fields = ['clinical_name','clinical_location','telephone','phone']
         
+class ListClinicalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model= Clinical
+        # fields =['id','clinical_name','clinical_location']
+        exclude =['doctor']
+        
+class UpdateSpecificClinicalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model= Clinical
+        # fields ='__all__'
+        exclude =['doctor']
+        
 class SetClinicalSerializer(serializers.ModelSerializer):
     class Meta:
         model = Clinical
@@ -53,7 +67,7 @@ class SetClinicalSerializer(serializers.ModelSerializer):
 class SetClinicalForPrescriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Clinical
-        fields = ['clinical_name']
+        fields = ['id','clinical_name']
         
 class GetPrescriptionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -160,12 +174,45 @@ class MakePrescriptionSerializer2(serializers.Serializer):
         
         
         
-class BookingSerializer(serializers.ModelSerializer):
+class PostBookingSerializer(serializers.ModelSerializer):
+    available_day_of_week = serializers.ChoiceField(choices=[(1, 'Tuesday'), (2, 'Wednesday'), (3, 'Thursday'), (4, 'Friday'), (5, 'Saturday'), (6, 'Sunday'), (7, 'Monday')])
     class Meta:
         model = Booking
-        fields = ['id','clinical','date','start','end','allowed_number']
+        fields = ['id','clinical','available_day_of_week','start','end','allowed_number']
         
+    def save(self, doctor,clinical):
+        today = timezone.now().date()
+        weekday = int(self.data['available_day_of_week'])
+        days_until_available_day = (weekday - today.weekday()) % 7
+        available_date = today + datetime.timedelta(days=days_until_available_day)
         
+        Booking.objects.create(doctor=doctor,
+                               date=available_date,
+                               clinical=clinical,
+                               start=self.data['start'],
+                               end=self.data['end'],
+                               allowed_number=self.data['allowed_number']
+                               )
+    # def update(self,doctor , clinical, id):
+    #     today = timezone.now().date()
+    #     weekday = int(self.data['available_day_of_week'])
+    #     days_until_available_day = (weekday - today.weekday()) % 7
+    #     available_date = today + datetime.timedelta(days=days_until_available_day)
+    #     appointment= Booking.objects.get(id =id)
+    #     appointment.doctor=doctor
+    #     appointment.date=available_date
+    #     appointment.clinical=clinical
+    #     appointment.start=self.data['start'],
+    #     appointment.end=self.data['end'],
+    #     appointment.allowed_number=self.data['allowed_number']
+        
+class BookingSerializer(serializers.ModelSerializer):
+    # available_day_of_week = serializers.ChoiceField(choices=[(1, 'Tuesday'), (2, 'Wednesday'), (3, 'Thursday'), (4, 'Friday'), (5, 'Saturday'), (6, 'Sunday'), (7, 'Monday')])
+    clinical =SetClinicalForPrescriptionSerializer()
+    class Meta:
+        model = Booking
+        fields = ['id','clinical','date','getDayOfWeek','getDayOfWeekAsNumber','start','end','getStartTwelveMode','getEndTwelveMode','allowed_number']
+
 # class ExampleSerializer(serializers.ModelSerializer):
 
 #     class Meta:
