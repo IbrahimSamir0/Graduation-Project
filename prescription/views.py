@@ -726,7 +726,7 @@ class GetMyAllAppointmentsForDoctor(generics.ListAPIView):
                     status=status.HTTP_200_OK)
         
 class ListClinical(generics.ListCreateAPIView):
-    permission_classes = [IsDoctor,]
+    permission_classes = [IsDoctor,]    
     authentication_classes = [TokenAuthentication,]
     serializer_class= ListClinicalSerializer
     def get(self, request):

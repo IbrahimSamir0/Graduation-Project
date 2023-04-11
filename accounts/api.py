@@ -247,14 +247,14 @@ class EditDoctorProfile(generics.RetrieveUpdateAPIView):
     def get(self, request):
         doctor = Doctor.objects.get(id= request.user.id)
         serializer = self.serializer_class(doctor)
-        return Response({"status":True,"data":serializer.data,"message":"This is your profile data"},status=status.HTTP_200_OK)
+        return Response({"status":True,"data":serializer.data,"message":"Success"},status=status.HTTP_200_OK)
     
     def put (self, request, *args, **kwargs):
         doctor = Doctor.objects.get(id= request.user.id)
         serializer = self.serializer_class(doctor,data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response ({"status":True,"data":serializer.data,"message":"your data changed successfully"},status=status.HTTP_200_OK)
+        return Response ({"status":True,"data":serializer.data,"message":"Success"},status=status.HTTP_200_OK)
 
 
 class MyProfileDoctor(generics.ListAPIView):
