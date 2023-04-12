@@ -211,6 +211,9 @@ class Booking(models.Model):
 class PatientBooking(models.Model):
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE)
     patient= models.OneToOneField(Patient,on_delete=models.CASCADE)
+    class Meta:
+        unique_together =(('booking','patient'),)
+        index_together =(('booking','patient'),)
     
     def __str__(self):
         return f"{self.booking.date.strftime('%A')}  {self.booking.date} ({self.booking.start.strftime('%I:%M %p')})"

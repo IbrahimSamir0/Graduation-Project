@@ -16,6 +16,11 @@ urlpatterns = [
     path('get_old_doctor_patients/',views.GetOldDoctorPatients.as_view(), name='GetOldDoctorPatients'),
     path('get_all_doctor_patients/',views.GetAllDoctorPatients.as_view(), name='GetAllDoctorPatients'),
     
+    path('get_all_booked_patients/',views.GetAllBookedPatients.as_view(), name='GetBookedPatients'),
+    path('get_specific_clinic_booked_patients/<int:id>/',views.GetBookedPatientsInSpecificClinic.as_view(), name='GetBookedPatientsInEachClinic'),
+    path('get_specific_appointment_booked_patients/<int:id>/',views.GetBookedPatientsInSpecificBooking.as_view(), name='GetBookedPatientsInEachClinic'),
+    path('get_Today_booked_patients/',views.GetTodayBookedPatientsInClinic.as_view(), name='GetBookedPatientsInEachClinic'),
+    
     path('get_my_all_clinics/',views.ListClinical.as_view(),name='ListClinical'),
     path('get_my_all_clinics/<int:id>/',views.GetSpecificClinical.as_view(),name='ListClinical'),
     path('get_doctor_patient_specific_prescription/<int:p_id>/',views.GetSpecificDoctorPatientPrescription.as_view(), name='GetSpecificDoctorPatientPrescription'),

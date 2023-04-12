@@ -348,7 +348,10 @@ class LoginAPI(ObtainAuthToken):
         try :
             token, created = Token.objects.get_or_create(user=user)
         except:
-            return Response({"status":False,"data":None,"message":"Username Or Password is Wrong."},status=status.HTTP_400_BAD_REQUEST)
+            return Response({"status":False,
+                             "data":None,
+                             "message":"Username Or Password is Wrong."},
+                            status=status.HTTP_404_NOT_FOUND)
         # login(request,user)
         return Response({"status":True,
                          "data":{
@@ -359,14 +362,14 @@ class LoginAPI(ObtainAuthToken):
                          "message":"login success."
         },status=status.HTTP_200_OK)
 
-class LogoutAPI(generics.CreateAPIView):
+class LogoutAPI(generics.DestroyAPIView):
     authentication_classes = [TokenAuthentication,]
     permission_classes = [IsAuthenticated,]
-    def post(self,request):
+    def delete(self,request):
         user = User.objects.get(id=request.user.id)
         token = Token.objects.get(user=user)
         token.delete()
-        return Response(None, status=status.HTTP_200_OK)
+        return Response("Successful logout", status=status.HTTP_200_OK)
 
 class ChangePasswordView(generics.UpdateAPIView):
     authentication_classes = [TokenAuthentication,]

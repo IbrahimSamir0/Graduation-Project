@@ -470,6 +470,164 @@ class GetAllDoctorPatients(generics.ListAPIView):
                             "message":"successful"},
                         status=status.HTTP_200_OK)
         
+class GetAllBookedPatients(generics.ListAPIView):
+    authentication_classes =[ TokenAuthentication,]
+    permission_classes= [IsDoctor,]
+    serializer_class=GetTodayPatientSerializer
+    def get(self, request):
+        doctor = Doctor.objects.get(id =request.user.id)
+        bookings= Booking.objects.filter(doctor= doctor)
+        if not bookings:
+            return Response({"status":False,
+                        "data":None,
+                        "message":"No Appointments yet, add one at least."},
+                        status=status.HTTP_404_NOT_FOUND)
+        patient_booked=PatientBooking.objects.filter(booking__in=bookings)
+        if not patient_booked:
+            return Response({"status":False,
+                        "data":None,
+                        "message":"No patients yet."},
+                        status=status.HTTP_404_NOT_FOUND)
+        today = date.today()
+        patient_booked_to_delete = patient_booked.filter(booking__date__lt=today)
+        if patient_booked_to_delete:
+            patient_booked_to_delete.delete()  
+        patient_booked_today = patient_booked.filter(booking__date__gte=today)
+        if not patient_booked_today:
+            return Response({"status":False,
+                        "data":None,
+                        "message":"No patients yet."},
+                        status=status.HTTP_404_NOT_FOUND)
+        serializer= self.serializer_class(patient_booked_today, many=True)
+        return Response({"status":True,
+                        "count":patient_booked_today.count(),
+                        "data":serializer.data,
+                        "message":"successful"},
+                        status=status.HTTP_200_OK)
+
+class GetBookedPatientsInSpecificClinic(generics.ListAPIView):
+    authentication_classes =[ TokenAuthentication,]
+    permission_classes= [IsDoctor,]
+    serializer_class=GetTodayPatientSerializer
+    def get(self, request, id):
+        doctor = Doctor.objects.get(id =request.user.id)
+        try:
+            Clinical.objects.get(id=id, doctor=doctor)
+        except Clinical.DoesNotExist:
+            return Response({
+                "status": False,
+                "data": None,
+                "message": "Clinic not found."
+            }, status=status.HTTP_404_NOT_FOUND)
+        bookings= Booking.objects.filter(doctor= doctor, clinical =id)
+        if not bookings:
+            return Response({"status":False,
+                        "data":None,
+                        "message":"No Appointments yet, add one at least."},
+                        status=status.HTTP_404_NOT_FOUND)
+        patient_booked = PatientBooking.objects.filter(booking__in=bookings)
+        if not patient_booked:
+            return Response({"status":False,
+                        "data":None,
+                        "message":"No patients yet."},
+                        status=status.HTTP_404_NOT_FOUND)
+        today = date.today()
+        patient_booked_to_delete = patient_booked.filter(booking__date__lt=today)
+        if patient_booked_to_delete:
+            patient_booked_to_delete.delete()  
+        patient_booked_today = patient_booked.filter(booking__date__gte=today)
+        if not patient_booked_today:
+            return Response({"status":False,
+                        "data":None,
+                        "message":"No patients yet."},
+                        status=status.HTTP_404_NOT_FOUND)
+        serializer= self.serializer_class(patient_booked_today, many=True)
+        return Response({"status":True,
+                        "count":patient_booked_today.count(),
+                        "data":serializer.data,
+                        "message":"successful"},
+                        status=status.HTTP_200_OK)
+
+
+
+class GetBookedPatientsInSpecificBooking(generics.ListAPIView):
+    authentication_classes =[ TokenAuthentication,]
+    permission_classes= [IsDoctor,]
+    serializer_class=GetTodayPatientSerializer
+    def get(self, request, id):
+        doctor = Doctor.objects.get(id =request.user.id)
+        try:
+            appointmant=Booking.objects.get(id=id, doctor=doctor)
+        except Booking.DoesNotExist:
+            return Response({
+                "status": False,
+                "data": None,
+                "message": "Appointment not found."
+            }, status=status.HTTP_404_NOT_FOUND)
+        patient_booked = PatientBooking.objects.filter(booking=appointmant)
+        if not patient_booked:
+            return Response({"status":False,
+                        "data":None,
+                        "message":"No patients yet."},
+                        status=status.HTTP_404_NOT_FOUND)
+        today = date.today()
+        patient_booked_to_delete = patient_booked.filter(booking__date__lt=today)
+        if patient_booked_to_delete:
+            patient_booked_to_delete.delete()  
+        patient_booked_today = patient_booked.filter(booking__date__gte=today)
+        if not patient_booked_today:
+            return Response({"status":False,
+                        "data":None,
+                        "message":"No patients yet."},
+                        status=status.HTTP_404_NOT_FOUND)
+        serializer= self.serializer_class(patient_booked_today, many=True)
+        return Response({"status":True,
+                        "count":patient_booked_today.count(),
+                        "data":serializer.data,
+                        "message":"successful"},
+                        status=status.HTTP_200_OK)
+
+
+
+
+
+
+
+
+        
+        
+class GetTodayBookedPatientsInClinic(generics.ListAPIView):
+    authentication_classes =[ TokenAuthentication,]
+    permission_classes= [IsDoctor,]
+    serializer_class=GetTodayPatientSerializer
+    def get(self, request):
+        doctor = Doctor.objects.get(id =request.user.id)
+        today = date.today()
+        bookings= Booking.objects.filter(doctor= doctor, date=today)
+        # if not bookings:
+        #     return Response({"status":False,
+        #                 "data":None,
+        #                 "message":"No Appointments match today yet."},
+        #                 status=status.HTTP_404_NOT_FOUND)
+        patient_booked = PatientBooking.objects.filter(booking__in=bookings)
+        today_patient_consultaion = Prescription.objects.filter(doctor=doctor ,next_consultation=today, cancelation_date__isnull=False)
+        if not patient_booked and not today_patient_consultaion:
+            return Response({"status":False,
+                        "data":None,
+                        "message":"No patients yet."},
+                        status=status.HTTP_404_NOT_FOUND)
+        serializer= self.serializer_class(patient_booked, many=True)
+        serializer2=GetPrescriptionDoctorPatientClinicalSerializer(today_patient_consultaion, many = True)
+        return Response({"status":True,
+                         "total_count":patient_booked.count()+today_patient_consultaion.count(),
+                        "booking_count":patient_booked.count(),
+                        "consultaion_count":today_patient_consultaion.count(),
+                        "booking":serializer.data,
+                        "consultaion":serializer2.data,
+                        "message":"successful"},
+                        status=status.HTTP_200_OK)
+        
+        
 class GetSpecificDoctorPatientPrescription(generics.ListAPIView):
     authentication_classes =[ TokenAuthentication,]
     permission_classes= [IsDoctor,]

@@ -350,6 +350,18 @@ class GetPrescriptionDoctorPatientClinicalSerializer(serializers.ModelSerializer
         model= Prescription
         fields =['id','patient','clinical']
         
+class BookingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Booking
+        fields=['date','clinical','start','end']
+        
+class GetTodayPatientSerializer(serializers.ModelSerializer):
+    patient = GetDoctorPAtientSerializer()
+    booking = BookingSerializer()
+    class Meta:
+        model= PatientBooking
+        fields =['id','patient','booking']
+        
 # class GetSpecificPrescriptionDoctorPatientClinicalSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model= Prescription
