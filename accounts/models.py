@@ -17,10 +17,14 @@ from django_rest_passwordreset.signals import reset_password_token_created
 from django.core.mail import send_mail  
 from datetime import date, timedelta
 from django.contrib.auth import update_session_auth_hash
+import random
 
 # Create your models here.
 
 validate = Validation()
+def future_date_validator(value):
+    if date.today() < value:
+        raise ValidationError("Date cannot be in the future.")
 
 def phoneValidate(value):
     numbers ='0123456789'
@@ -160,13 +164,13 @@ class UserInheritance(models.Model):
         )
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
-    date_birth = models.DateField(null=True)
+    date_birth = models.DateField(validators= [future_date_validator])
     phone = models.CharField(max_length=11,validators=([phoneValidate]))
     city = models.CharField(max_length=30, choices=CITIES)
     avatar = models.TextField(blank= True)
     gender = models.CharField(choices=GENDER, max_length=1)
     
-    
+        
     def get_age (self):
         today = date.today()
         if self.date_birth is not None :

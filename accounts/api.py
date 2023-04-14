@@ -199,21 +199,16 @@ class MyProfilePatient(generics.ListAPIView):
         except Exception as e :
             return Response(f'{e}',status=status.HTTP_404_NOT_FOUND)
         serializer = self.serializer_class(patient,many=False)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({"status":True,
+                         "data":serializer.data,
+                         "message":"Success"},
+                        status=status.HTTP_200_OK)
             
         
-class EditPatientProfile (generics.RetrieveUpdateAPIView):
+class EditPatientProfile (generics.UpdateAPIView):
     authentication_classes = [TokenAuthentication,]
     permission_classes = [IsAuthenticated,]
     serializer_class= EditPatientProfileSerializer
-    def get(self, request):
-        try:
-            patient = Patient.objects.get(id= request.user.id)
-        except Exception as e:
-            return Response(f'{e}',status=status.HTTP_404_NOT_FOUND)
-        serializer = self.serializer_class(patient)
-        return Response(serializer.data,status=status.HTTP_200_OK)
-    
     def put (self, request, *args, **kwargs):
         try:
             patient = Patient.objects.get(id= request.user.id)
@@ -223,7 +218,7 @@ class EditPatientProfile (generics.RetrieveUpdateAPIView):
         serializer = self.serializer_class(patient,data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response (serializer.data,status=status.HTTP_202_ACCEPTED)
+        return Response ({"status":True,"data":serializer.data,"message":"Success"},status=status.HTTP_200_OK)
     
         
 class RegisterAsDoctorAPI(generics.CreateAPIView):

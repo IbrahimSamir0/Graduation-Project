@@ -36,8 +36,8 @@ def phoneValidate(value):
 
 
 def future_date_validator(value):
-    if date.today() >= value:
-        raise ValidationError("Date cannot be today or in the past.")
+    if date.today() > value:
+        raise ValidationError("Date cannot be in the past.")
 
 
 def image_upload(instance, filename):

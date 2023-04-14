@@ -17,7 +17,7 @@ class DoctorSerializer(serializers.ModelSerializer):
     # user_type = Type()
     class Meta:
         model = Doctor
-        fields = ['username','email','first_name','last_name','phone','avatar','bio','about','city','price','numOfRating','avgRating','ratingDetails']
+        fields = ['username','email','first_name','last_name','phone','avatar','bio','about','city','price','numOfRating','avgRating','ratingDetails','gender','get_age']
         
 class EditDoctorProfileSerializer(serializers.ModelSerializer):
     class Meta:
@@ -70,7 +70,7 @@ class ConfirmPasswordSerializer(serializers.Serializer):
 class RegisterSerializerAsPatient(serializers.ModelSerializer):
     class Meta:
         model = Patient
-        fields = ('id','email','password','first_name','last_name','phone','date_birth')
+        fields = ('id','email','password','first_name','last_name','phone','date_birth','gender','city')
         extra_kwargs = {'password': {'write_only': True}}
 
     # def createPatient(self, validated_data):  
@@ -84,12 +84,14 @@ class RegisterSerializerAsPatient(serializers.ModelSerializer):
         #     return username
         user = Patient(
             email=validated_data['email'] ,
-            username =validated_data['email'].split('@')[0],
+            username =validated_data['first_name'].lower()+validated_data['last_name'].lower()+f'{random.randint(0, 9999)}',
             first_name=validated_data['first_name'],
             last_name=validated_data['last_name'],
             typ=patient_type,
             phone=validated_data['phone'],
-            
+            gender=validated_data['gender'],
+            city=validated_data['city'],
+            date_birth=validated_data['date_birth'],
             # is_active =False,
             password = make_password(validated_data['password'])
         )
@@ -100,7 +102,7 @@ class RegisterSerializerAsPatient(serializers.ModelSerializer):
 class RegisterSerializerAsDoctor(serializers.ModelSerializer):
     class Meta:
         model = Doctor
-        fields = ('id','email','password','first_name','last_name','phone')
+        fields = ('id','email','password','first_name','last_name','phone','date_birth','gender','city')
         extra_kwargs = {'password': {'write_only': True}}
 
     # def createdoctor(self, validated_data):  
@@ -116,7 +118,9 @@ class RegisterSerializerAsDoctor(serializers.ModelSerializer):
             last_name=validated_data['last_name'],
             typ=doctor_type,
             phone=validated_data['phone'],
-            
+            gender=validated_data['gender'],
+            city=validated_data['city'],
+            date_birth=validated_data['date_birth'],
             # is_active =False,
             # doctor_number=validated_data['doctor_number'],
             password = make_password(validated_data['password'])

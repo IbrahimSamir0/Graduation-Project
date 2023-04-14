@@ -492,7 +492,7 @@ class GetAllBookedPatients(generics.ListAPIView):
         patient_booked_to_delete = patient_booked.filter(booking__date__lt=today)
         if patient_booked_to_delete:
             patient_booked_to_delete.delete()  
-        patient_booked_today = patient_booked.filter(booking__date__gte=today)
+        patient_booked_today = patient_booked.filter(booking__date__gte=today).order_by('booking__id')
         if not patient_booked_today:
             return Response({"status":False,
                         "data":None,
@@ -535,7 +535,7 @@ class GetBookedPatientsInSpecificClinic(generics.ListAPIView):
         patient_booked_to_delete = patient_booked.filter(booking__date__lt=today)
         if patient_booked_to_delete:
             patient_booked_to_delete.delete()  
-        patient_booked_today = patient_booked.filter(booking__date__gte=today)
+        patient_booked_today = patient_booked.filter(booking__date__gte=today).order_by('id')
         if not patient_booked_today:
             return Response({"status":False,
                         "data":None,
@@ -609,8 +609,8 @@ class GetTodayBookedPatientsInClinic(generics.ListAPIView):
         #                 "data":None,
         #                 "message":"No Appointments match today yet."},
         #                 status=status.HTTP_404_NOT_FOUND)
-        patient_booked = PatientBooking.objects.filter(booking__in=bookings)
-        today_patient_consultaion = Prescription.objects.filter(doctor=doctor ,next_consultation=today, cancelation_date__isnull=False)
+        patient_booked = PatientBooking.objects.filter(booking__in=bookings).order_by('booking__id','id')
+        today_patient_consultaion = Prescription.objects.filter(doctor=doctor ,next_consultation=today, cancelation_date__isnull=True)
         if not patient_booked and not today_patient_consultaion:
             return Response({"status":False,
                         "data":None,
