@@ -27,6 +27,7 @@ from base64 import b64decode
 from django.core.files.base import ContentFile  
 from datetime import date , timedelta
 from django.core.cache import cache
+from .bot1.run import RUN
 
 
 class MakePrescription(viewsets.ModelViewSet):
@@ -192,13 +193,14 @@ class SetPrescription(generics.CreateAPIView):
             try:
                 _drug = StandardDrugs.objects.get(name=drug['drug_name'])
             except StandardDrugs.DoesNotExist:
-                return Response({"status":False,
-                                 "data":None,
-                                 "message":"No Drug with this name"},
-                                status=status.HTTP_404_NOT_FOUND)
+                run = RUN()
+                run.open()
+                run.prepare_drugs([drug['drug_name']])
+                _drug = StandardDrugs.objects.get(name=drug['drug_name'])
             Drug.objects.create(
                 prescription = prescription,
                 # **drug
+                consentration = drug['consentration'],
                 drug = _drug,
                 end_in = drug['end_in'],
                 dose_per_hour = drug['dose_per_hour']
@@ -218,8 +220,25 @@ class SetPrescription(generics.CreateAPIView):
         
         # prescription.save()
         # json_prescription=serializers.serialize("json",prescription)
-        return Response(status=status.HTTP_201_CREATED)
+        return Response({"status":True,
+                         "data":None,
+                         "message":"Success"},
+                        status=status.HTTP_201_CREATED)
 
+class BotSearch(generics.CreateAPIView):
+    permission_classes = [IsDoctor,]
+    authentication_classes = [TokenAuthentication,]
+    serializer_class = BotSearchSerializer
+    def post(self, request):
+        serializer = self.serializer_class(data= request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            StandardDrugs.objects.get(name = serializer.validated_data['name'])
+        except StandardDrugs.DoesNotExist:
+            run = RUN()
+            run.open()
+            run.prepare_drugs([serializer.validated_data['name']])
+        
 
         
 # @api_view(['GET','POST'])

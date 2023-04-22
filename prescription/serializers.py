@@ -96,7 +96,7 @@ class SetDrugNameSerializer(serializers.ModelSerializer):
     drug_name = serializers.CharField()
     class Meta:
         model = Drug
-        fields = ['drug_name','end_in','dose_per_hour']
+        fields = ['drug_name','end_in','dose_per_hour','consentration']
 
 class GetAllStandardDrugsNameSerializer(serializers.ModelSerializer):
     class Meta:
@@ -205,6 +205,11 @@ class PostBookingSerializer(serializers.ModelSerializer):
     #     appointment.start=self.data['start'],
     #     appointment.end=self.data['end'],
     #     appointment.allowed_number=self.data['allowed_number']
+
+class BotSearchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model= StandardDrugs
+        fields=['name']
         
 class BookingSerializer(serializers.ModelSerializer):
     # available_day_of_week = serializers.ChoiceField(choices=[(1, 'Tuesday'), (2, 'Wednesday'), (3, 'Thursday'), (4, 'Friday'), (5, 'Saturday'), (6, 'Sunday'), (7, 'Monday')])

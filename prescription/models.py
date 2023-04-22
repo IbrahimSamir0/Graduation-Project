@@ -52,7 +52,7 @@ class Prescription(models.Model):
     patient= models.ForeignKey('accounts.Patient', related_name='patient_id', on_delete=models.CASCADE)
     doctor = models.ForeignKey('accounts.Doctor', related_name='doctor_id', on_delete=models.PROTECT)
     day_created = models.DateField(default=datetime.now)
-    next_consultation = models.DateField(_("next consultation"))
+    next_consultation = models.DateField(_("next consultation"),validators=[future_date_validator])
     clinical =models.ForeignKey('Clinical', related_name='Clinical', on_delete=models.CASCADE)
     cancelation_date= models.DateField(null = True)
     # is_patient_cancels= models.BooleanField(default=False)
@@ -79,6 +79,7 @@ class Prescription(models.Model):
         
         
 class active_Ingredient (models.Model):
+    id = models.IntegerField(primary_key=True, db_index=True, unique=True)
     name=models.CharField(("Ingredient name"), max_length=100)
 
     def __str__(self):
@@ -90,27 +91,35 @@ class Interaction_status(models.Model):
 class ingredient_interaction (models.Model):
     first=models.ForeignKey(active_Ingredient,related_name='firstID',verbose_name=("First Active Ingredient "),on_delete=models.CASCADE)
     second=models.ForeignKey(active_Ingredient,verbose_name=("Second Active Ingredient "), related_name='secondID',on_delete=models.CASCADE)
-    description =models.TextField(("Description"),max_length=1000)
-    status = models.ForeignKey(Interaction_status, on_delete=models.CASCADE)
+    description =models.TextField(("Description"),max_length=5000, null=True, blank=True)
+    status = models.ForeignKey(Interaction_status, on_delete=models.CASCADE,null=True,blank=True)
 
 class StandardDrugs(models.Model):
-    name=models.CharField(("Drug name"), max_length=100,db_index=True)
-    desease=models.CharField(("Desease name"), max_length=100)
-    sideEffects=models.TextField(("Side Effects"),max_length=1000)
-    description=models.TextField(("Description"),max_length=1000)
-    drugType=models.CharField(("Drug Type"),max_length=100 ,null=True)
+    id = models.IntegerField(primary_key=True, db_index=True, unique=True)
+    name=models.CharField(("Drug name"), max_length=100,db_index=True, unique= True)
+    sideEffects=models.TextField(("Side Effects"),max_length=1000, null=True, blank=True)
+    uses=models.TextField(("uses"),max_length=3000, null=True, blank=True)
+    warnings=models.TextField(("warnings"),max_length=3000, null=True, blank=True)
+    before_taking=models.TextField(("before_taking"),max_length=3000, null=True, blank=True)
+    how_to_take=models.TextField(("how_to_take"),max_length=3000, null=True, blank=True)
+    miss_dose=models.TextField(("miss_dose"),max_length=3000, null=True, blank=True)
+    overdose=models.TextField(("overdose"),max_length=3000, null=True, blank=True)
+    what_to_avoid=models.TextField(("what_to_avoid"),max_length=3000, null=True, blank=True)
     activeIngredient=models.ForeignKey(active_Ingredient , on_delete=models.CASCADE,null=True,blank=True)
 
     def __str__(self):
         return self.name 
-    
-        
+
+
 class Drug (models.Model):
-    drug = models.ForeignKey(StandardDrugs, related_name='StandardDrugs', on_delete=models.PROTECT)
+    drug = models.ForeignKey(StandardDrugs, related_name='StandardDrugs', on_delete=models.PROTECT, null=True, blank=True)
     prescription = models.ForeignKey(Prescription, on_delete=models.CASCADE)
     start_in = models.DateField(_("Start in"),default=datetime.now)
-    end_in = models.DateField(_("End in"))
+    end_in = models.DateField(_("End in"),validators=[future_date_validator])
+    consentration=models.PositiveSmallIntegerField()
     dose_per_hour = models.FloatField(_("dose"))
+    drugType=models.CharField(("Drug Type"),max_length=100 ,null=True, blank=True)
+    name_if_doesnt_exist= models.CharField(max_length=100,null=True, blank=True)
     
     def __str__(self):
         return self.drug.name

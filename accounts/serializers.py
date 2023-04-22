@@ -27,7 +27,7 @@ class EditDoctorProfileSerializer(serializers.ModelSerializer):
 class PatientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Patient
-        fields = ['id','doctor_id','email','username','first_name','last_name','gender','get_age','phone','avatar','city']
+        fields = ['id','email','username','first_name','last_name','gender','get_age','phone','avatar','city']
         # extra_kwargs = {'password': {'write_only': True}}
         
 class EditPatientProfileSerializer(serializers.ModelSerializer):
@@ -84,7 +84,7 @@ class RegisterSerializerAsPatient(serializers.ModelSerializer):
         #     return username
         user = Patient(
             email=validated_data['email'] ,
-            username =validated_data['first_name'].lower()+validated_data['last_name'].lower()+f'{random.randint(0, 9999)}',
+            username = self.randomUsername(validated_data['first_name'].lower()+validated_data['last_name'].lower()),
             first_name=validated_data['first_name'],
             last_name=validated_data['last_name'],
             typ=patient_type,
@@ -98,6 +98,15 @@ class RegisterSerializerAsPatient(serializers.ModelSerializer):
         user.save()
         Token.objects.get_or_create(user=user)
         return user
+    
+    def randomUsername(self, username):
+        res= username+f'{random.randint(0, 9999)}'
+        try:
+            User.objects.get(username=res)
+            self.randomUsername(username)
+        except User.DoesNotExist:
+            return res
+        
     
 class RegisterSerializerAsDoctor(serializers.ModelSerializer):
     class Meta:
@@ -113,7 +122,7 @@ class RegisterSerializerAsDoctor(serializers.ModelSerializer):
         
         user = Doctor(
             email=validated_data['email'] ,
-            username =validated_data['email'].split('@')[0],
+            username = self.randomUsername(validated_data['first_name'].lower()+validated_data['last_name'].lower()),
             first_name=validated_data['first_name'],
             last_name=validated_data['last_name'],
             typ=doctor_type,
@@ -128,6 +137,14 @@ class RegisterSerializerAsDoctor(serializers.ModelSerializer):
         user.save()
         Token.objects.get_or_create(user=user)
         return user
+    
+    def randomUsername(self, username):
+        res= username+f'{random.randint(0, 9999)}'
+        try:
+            User.objects.get(username=res)
+            self.randomUsername(username)
+        except User.DoesNotExist:
+            return res
     
 class RatingSerializer(serializers.ModelSerializer):
     class Meta :
