@@ -81,6 +81,7 @@ class Prescription(models.Model):
 class active_Ingredient (models.Model):
     id = models.IntegerField(primary_key=True, db_index=True, unique=True)
     name=models.CharField(("Ingredient name"), max_length=100)
+    if_interaction_exist= models.BooleanField(default=False)
 
     def __str__(self):
         return self.name

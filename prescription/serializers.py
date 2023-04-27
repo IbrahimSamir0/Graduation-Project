@@ -84,12 +84,7 @@ class GetPatientSerializer(serializers.ModelSerializer):
         model = Patient
         fields =['id','first_name','last_name','get_age','gender']
         
-class SetDrugSerializer(serializers.ModelSerializer):
-    # prescription=SetPrescriptionSerializer()
-    # drug_name = serializers.CharField()
-    class Meta:
-        model = Drug
-        fields = ['drug','end_in','dose_per_hour']
+
         
 class SetDrugNameSerializer(serializers.ModelSerializer):
     # prescription=SetPrescriptionSerializer()
@@ -102,8 +97,20 @@ class GetAllStandardDrugsNameSerializer(serializers.ModelSerializer):
     class Meta:
         model = StandardDrugs
         fields=['name']
+        
+class SetDrugSerializer(serializers.ModelSerializer):
+    drug= GetAllStandardDrugsNameSerializer()
+    class Meta:
+        model = Drug
+        fields = ['drug','end_in','dose_per_hour','name_if_doesnt_exist','consentration']
+
+class StandardScreensSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StandardScreens
+        fields = ['name','description']
 
 class GetScreenSerialzer(serializers.ModelSerializer):
+    screen=StandardScreensSerializer()
     class Meta:
         model = Screen
         fields = ['screen','deadline','image']
@@ -206,10 +213,21 @@ class PostBookingSerializer(serializers.ModelSerializer):
     #     appointment.end=self.data['end'],
     #     appointment.allowed_number=self.data['allowed_number']
 
-class BotSearchSerializer(serializers.ModelSerializer):
+class StandatrdDrugNameSerializer(serializers.Serializer):
+    name=serializers.CharField()
+    class Meta:
+        fields=['name']
+        
+class ActiveIngredientSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = active_Ingredient
+        fields=['id','name']
+        
+class DrugDeteailsSerializer(serializers.ModelSerializer):
+    activeIngredient=ActiveIngredientSerializer()
     class Meta:
         model= StandardDrugs
-        fields=['name']
+        fields=['name','sideEffects','uses','warnings','before_taking','how_to_take','miss_dose','overdose','what_to_avoid','activeIngredient']
         
 class BookingSerializer(serializers.ModelSerializer):
     # available_day_of_week = serializers.ChoiceField(choices=[(1, 'Tuesday'), (2, 'Wednesday'), (3, 'Thursday'), (4, 'Friday'), (5, 'Saturday'), (6, 'Sunday'), (7, 'Monday')])
@@ -314,8 +332,8 @@ class CreatePrescriptionSerializer(serializers.ModelSerializer):
     
 class PostScreenSerializer(serializers.ModelSerializer):
     class Meta:
-        model = TestScreen
-        fields = ['text']
+        model = Screen
+        fields = ['image']
         
         # def create(self,validated_data):
         #     pat = Patient.objects.get(id=self.context['request'].user.id)
@@ -339,7 +357,7 @@ class GetOldPrescriptions(serializers.Serializer):
 class GetCurentClinicalForPatientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Clinical
-        fields = ['id','clinical_name']
+        fields = ['id','clinical_name','clinical_location']
         
         
 class GetDoctorPAtientSerializer(serializers.ModelSerializer):

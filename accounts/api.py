@@ -30,6 +30,7 @@ from .helper import sendForgerPasswordMail
 from rest_framework.decorators import action
 import json
 from prescription.permissions import *
+from rest_framework.pagination import PageNumberPagination
 
 # patient_type = UserType.objects.get(typ = 1)
 # doctor_type = UserType.objects.get(typ = 2)
@@ -106,27 +107,58 @@ def FBV_pk_patient(request,id):
 
 ########################################################## DOCTOR ####################################################
 
+class CustomPagination(PageNumberPagination):
+    page_size = 3
 
-@api_view(['GET'])
-# @authentication_classes(TokenAuthentication)
-def doctorProfileForPatient(request):
-    # GET
-    if request.method == 'GET':
+
+class GetAllDoctors(generics.ListAPIView):
+    authentication_classes = [TokenAuthentication,]
+    permission_classes = [IsPatient,]
+    serializer_class = DoctorSerializer
+    pagination_class = CustomPagination
+    def get(self, request):
+        # GET
         try:
-            doctor= Doctor.objects.all()
+            #Select All Doctors that have booking
+            queryset = Doctor.objects.filter(booking__isnull=False).distinct()
+        except Doctor.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        # Apply pagination to queryset
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.serializer_class(page, many=True)
+            return Response({"status":True,
+                             "count": queryset.count(),
+                            "next": self.paginator.get_next_link(),
+                            "previous": self.paginator.get_previous_link(),
+                             "data":serializer.data,
+                             "message":"Success"}
+                            ,status=status.HTTP_200_OK)
+
+        serializer = self.serializer_class(queryset, many=True)
+        return Response({"status":True,
+                             "count": queryset.count(),
+                            "next": None,
+                            "previous": None,
+                             "data":serializer.data,
+                             "message":"Success"}
+                            ,status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsPatient])
+def searchDoctor(request):
+    # GET
+    if request.method == 'POST':
+        data=request.data
+        try:
+            doctor= Doctor.objects.filter(**data,booking__isnull=False).distinct()
         except Doctor.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = DoctorSerializer(doctor, many=True)
-        return Response(serializer.data,status=status.HTTP_200_OK)
-    #POST
-    # elif request.method == 'POST':
-    #     all_doctor= Doctor.objects.all()
-    #     all_doctor_data = DoctorSerializer(all_doctor, many=True)
-    #     doctor_data =DoctorSerializer(data= request.data)
-    #     if (doctor_data.is_valid()):
-    #         doctor_data.save()
-    #         return Response(all_doctor_data.data,status= status.HTTP_201_CREATED)
-    #     return Response(doctor_data.data,status= status.HTTP_400_BAD_REQUEST)
+        return Response({"status":True,"data":serializer.data,"message":"Success"},status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
@@ -138,9 +170,8 @@ def FBV_pk_doctor(request,id):
         return Response(status= status.HTTP_404_NOT_FOUND)
     #GET
     if request.method == 'GET':    
-        doctor_data = DoctorSerializer(doctor)
-        return Response(doctor_data.data)
-    
+        serializer = DoctorSerializer(doctor)
+    return Response({"status":True,"data":serializer.data,"message":"Success"},status=status.HTTP_200_OK)    
     # #PUT
     # elif request.method == 'PUT':
     #     doctor_data =DoctorSerializer(doctor,data= request.data)

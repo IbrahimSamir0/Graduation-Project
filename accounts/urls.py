@@ -43,7 +43,8 @@ urlpatterns = [
     path('api/doctor_profile/register/',api.RegisterAsDoctorAPI.as_view()),
     path('api/doctor_profile/edit/',api.EditDoctorProfile.as_view()),
     path('api/doctor_my_profile/',api.MyProfileDoctor.as_view(), name='MyProfileDoctor'),
-    path('api/all_doctors_profile/',api.doctorProfileForPatient, name='all_doctors_profile'),
+    path('api/all_doctors_profile/',api.GetAllDoctors.as_view(), name='all_doctors_profile'),
+    path('api/search_doctors/',api.searchDoctor, name='searchDoctor'),
     path('api/doctor_profile/<int:id>/',api.FBV_pk_doctor, name='DoctorDetailAPI'),
     path('api/doctor_profile/<int:id>/rate/',api.DoctorRate.as_view()),
     

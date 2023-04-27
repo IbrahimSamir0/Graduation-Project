@@ -17,7 +17,7 @@ class DoctorSerializer(serializers.ModelSerializer):
     # user_type = Type()
     class Meta:
         model = Doctor
-        fields = ['username','email','first_name','last_name','phone','avatar','bio','about','city','price','numOfRating','avgRating','ratingDetails','gender','get_age']
+        fields = ['id','username','email','first_name','last_name','phone','avatar','bio','about','city','price','numOfRating','avgRating','ratingDetails','gender','get_age']
         
 class EditDoctorProfileSerializer(serializers.ModelSerializer):
     class Meta:
