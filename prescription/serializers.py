@@ -72,12 +72,12 @@ class SetClinicalForPrescriptionSerializer(serializers.ModelSerializer):
 class GetPrescriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Prescription
-        fields = ['id','day_created','next_consultation']
+        fields = ['id','day_created','next_consultation','cancelation_date']
         
 class GetDoctorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Doctor
-        fields= ['first_name','last_name','bio']
+        fields= ['id','first_name','last_name','bio']
         
 class GetPatientSerializer(serializers.ModelSerializer):
     class Meta:
@@ -113,7 +113,7 @@ class GetScreenSerialzer(serializers.ModelSerializer):
     screen=StandardScreensSerializer()
     class Meta:
         model = Screen
-        fields = ['screen','deadline','image']
+        fields = ['id','screen','deadline','image']
         
 class SetScreenSerializer(serializers.ModelSerializer):
     class Meta:
@@ -124,8 +124,14 @@ class SetMedicalAnalysisSerializer(serializers.ModelSerializer):
     class Meta:
         model = MedicalAnalysis
         fields =['standard_medical_analysis','deadline']
+
+class StandardMedicalAnalysisSerializer(serializers.ModelSerializer):
+    class Meta:
+        model= StandardMedicalAnalysis
+        fields =['name','description']
         
 class GetMedicalAnalysisSerializer(serializers.ModelSerializer):
+    standard_medical_analysis= StandardMedicalAnalysisSerializer()
     class Meta:
         model = MedicalAnalysis
         fields =['standard_medical_analysis','deadline','image']
@@ -357,7 +363,7 @@ class GetOldPrescriptions(serializers.Serializer):
 class GetCurentClinicalForPatientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Clinical
-        fields = ['id','clinical_name','clinical_location']
+        fields = ['id','clinical_name','clinical_location','phone']
         
         
 class GetDoctorPAtientSerializer(serializers.ModelSerializer):

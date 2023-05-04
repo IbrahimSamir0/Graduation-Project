@@ -1,50 +1,37 @@
 from django.forms import ValidationError
-from django.shortcuts import render
 from .models import *
 from .serializers import *
 from rest_framework.response import Response
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.decorators import api_view
 from rest_framework.views import APIView
-from rest_framework import generics , status, filters ,viewsets
+from rest_framework import generics , status
 from rest_framework.permissions import IsAuthenticated  
 from .permissions import IsDoctor , IsPatient
-from django.core import serializers
-import base64
-import os
-from django.core.files import File 
-import json
-from rest_framework.decorators import action, parser_classes
-from rest_framework.fields import CurrentUserDefault
-from rest_framework import parsers
 from rest_framework.permissions import AllowAny
-from rest_framework.authentication import TokenAuthentication, SessionAuthentication
+from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import api_view
-from rest_framework.decorators import parser_classes
-from rest_framework.parsers import JSONParser
-import base64
-from io import StringIO
-from base64 import b64decode
-from django.core.files.base import ContentFile  
-from datetime import date , timedelta
+from datetime import date 
 from django.core.cache import cache
-from .cond.run import RUN
-from celery import shared_task
+from .bot.run import RUN
 import threading
-from django.db.models import F
+from django.db.models import F, Q, OuterRef, Subquery 
+from django.core import serializers as ser
 
 
 
-class MakePrescription(viewsets.ModelViewSet):
-    queryset = Prescription.objects.all()
-    serializer_class = MakePrescriptionSerializer2
-    @action (methods=['POST'],detail=True)
-    def makeNewPrescriptopn(self,request, pk =None):
-        prescription=Prescription.objects.create(
-            patient = Patient.objects.get(id = pk),
-            doctor = Doctor.objects.get(id=request.user.id),
-            clinical = request.data['clinical'],
-            next_consultation=request.data['next_consultation']
-        )
+
+
+# class MakePrescription(viewsets.ModelViewSet):
+#     queryset = Prescription.objects.all()
+#     serializer_class = MakePrescriptionSerializer2
+#     @action (methods=['POST'],detail=True)
+#     def makeNewPrescriptopn(self,request, pk =None):
+#         prescription=Prescription.objects.create(
+#             patient = Patient.objects.get(id = pk),
+#             doctor = Doctor.objects.get(id=request.user.id),
+#             clinical = request.data['clinical'],
+#             next_consultation=request.data['next_consultation']
+#         )
 
         
 
@@ -158,13 +145,15 @@ class GetAllStandardDrugsName(generics.ListAPIView):
             cache.set('standard_drugs',data,timeout =3600)
         return standard_drugs
 
-class GetAllStandardDrugsNameFilter(generics.CreateAPIView):
+class GetAllStandardDrugsNameFilter(generics.ListAPIView):
     permission_classes=[IsDoctor,]
     authentication_classes = [TokenAuthentication,]
-    def post(self, request):
-        word = request.data['word']
-        standard_drugs=StandardDrugs.objects.filter(name__startswith=word).values_list('name', flat=True)
-        return Response({"status":True,"data":standard_drugs,"message":"successful"},status=status.HTTP_200_OK)
+    def get(self, request, format=None):
+        query = request.GET.get('q', '')
+        # word = request.data['word']
+        standard_drugs=StandardDrugs.objects.filter(name__istartswith=query).values_list('name', flat=True)
+        results = [str(obj) for obj in standard_drugs]
+        return Response({"status":True,"data":results,"message":"successful"},status=status.HTTP_200_OK)
 
 class SetPrescription(generics.CreateAPIView):
     permission_classes = [IsDoctor,]
@@ -221,6 +210,10 @@ class SetPrescription(generics.CreateAPIView):
                 patient = Patient.objects.get(id= patient_id),
                 **m
                 )
+        objs = Prescription.objects.filter(cancelation_date__isnull=True).exclude(id=prescription.id)
+        objs.update(cancelation_date=date.today())
+
+
     
     def post(self, request, patient_id,):
         serializer =self.serializer_class(data=request.data)
@@ -342,19 +335,30 @@ class PostScreen(generics.CreateAPIView):
     
 class GetMyScreens(generics.ListAPIView):
     authentication_classes = [TokenAuthentication,]
-    permission_classes = [IsPatient]
-    serializer_class=PostScreenSerializer
+    permission_classes = [IsPatient,]
+    serializer_class=GetScreenSerialzer
     def get(self, request):
-        patient= Patient.objects.get(id= request.user.id)
+        patient= Patient.objects.get(id=request.user.id)
         my_screens = Screen.objects.filter(patient=patient).order_by('-id')
         if not my_screens:
             return Response({"status":False,
                              "data":None,
                              "message":"No Screens yet"},
-                            status=status.HTTP_200_OK)
+                            status=status.HTTP_404_NOT_FOUND)
         serializer= self.serializer_class(my_screens, many= True)
         return Response({"status":True,
                          "data":serializer.data,"message":"True"},status=status.HTTP_200_OK)
+        
+class AddOrUpdateScreenForPatient(generics.UpdateAPIView):
+    authentication_classes = [TokenAuthentication,]
+    permission_classes = [IsPatient,]
+    serializer_class=PostScreenSerializer
+    def put(self, request,id):
+        screen =Screen.objects.get(id= id)
+        serializer= self.serializer_class(screen, data= request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"status":True,"data":serializer.data,"message":"Success"},status=status.HTTP_200_OK)
         
         
 class GetMySpecificScreens(generics.ListAPIView):
@@ -503,15 +507,6 @@ def upload_image(request):
 
     return Response( status=status.HTTP_201_CREATED)
 
-class GetScreen(generics.ListAPIView):
-    # queryset = TestScreen.objects.all()
-    serializer_class = PostScreenSerializer
-    
-    def get(self,request):
-        screen = TestScreen.objects.get(id = 26)
-        serializer = self.serializer_class(screen,many = False)
-        return Response(serializer.data,status=status.HTTP_200_OK)
-        
 
 class GetActiveDoctorPatients(generics.ListAPIView):
     authentication_classes =[ TokenAuthentication,]
@@ -534,26 +529,32 @@ class GetActiveDoctorPatients(generics.ListAPIView):
                             "message":"successful"},
                         status=status.HTTP_200_OK)
         
-class GetOldDoctorPatients(generics.ListAPIView):
-    authentication_classes =[ TokenAuthentication,]
-    permission_classes= [IsDoctor,]
-    serializer_class =GetPrescriptionDoctorPatientClinicalSerializer
-    def get(self,request):
-        doctor = Doctor.objects.get(id = request.user.id)
-        old_patients= Prescription.objects.filter(doctor = doctor.id, cancelation_date__isnull=False).order_by('-next_consultation')
-        if not old_patients :
-            return Response({"status":False,"data":None,'message':'Old patients do not exist'})
-        unique_patients = []
-        unique_ids = set()
-        for patient in old_patients:
-            if patient.patient.id not in unique_ids:
-                unique_patients.append(patient)
-                unique_ids.add(patient.patient.id)   
-        serializer =self.serializer_class(unique_patients,many = True)
-        return Response({"status":True,
-                            "data":serializer.data,
-                            "message":"successful"},
-                        status=status.HTTP_200_OK)
+# class GetOldDoctorPatients(generics.ListAPIView):
+#     authentication_classes =[ TokenAuthentication,]
+#     permission_classes= [IsDoctor,]
+#     serializer_class =GetPrescriptionDoctorPatientClinicalSerializer
+#     def get(self,request):
+#         doctor = Doctor.objects.get(id = request.user.id)
+#         old_patients = Prescription.objects.filter(
+#             doctor =doctor,
+#             ).exclude(Q(
+#                 doctor=doctor)&Q(
+#                 patient=F('patient'))&
+#                 (Q(cancelation_date__isnull=True)|Q(cancelation_date__isnull=False))
+#                 ).distinct()
+#         if not old_patients :
+#             return Response({"status":False,"data":None,'message':'Old patients do not exist'})
+#         unique_patients = []
+#         unique_ids = set()
+#         for patient in old_patients:
+#             if patient.patient.id not in unique_ids:
+#                 unique_patients.append(patient)
+#                 unique_ids.add(patient.patient.id)   
+#         serializer =self.serializer_class(unique_patients,many = True)
+#         return Response({"status":True,
+#                             "data":serializer.data,
+#                             "message":"successful"},
+#                         status=status.HTTP_200_OK)
         
 class GetAllDoctorPatients(generics.ListAPIView):
     authentication_classes =[ TokenAuthentication,]
@@ -561,7 +562,7 @@ class GetAllDoctorPatients(generics.ListAPIView):
     serializer_class =GetPrescriptionDoctorPatientClinicalSerializer
     def get(self,request):
         doctor = Doctor.objects.get(id = request.user.id)
-        All_patients= Prescription.objects.filter(doctor = doctor.id)
+        All_patients= Prescription.objects.filter(doctor = doctor.id).order_by('-id')
         if not All_patients :
             return Response({"status":False,"data":None,'message':'No Patients to display.'})
         unique_patients = []
@@ -575,41 +576,34 @@ class GetAllDoctorPatients(generics.ListAPIView):
                             "data":serializer.data,
                             "message":"successful"},
                         status=status.HTTP_200_OK)
-        
+
 class GetAllBookedPatients(generics.ListAPIView):
-    authentication_classes =[ TokenAuthentication,]
-    permission_classes= [IsDoctor,]
-    serializer_class=GetTodayPatientSerializer
-    def get(self, request):
-        doctor = Doctor.objects.get(id =request.user.id)
-        bookings= Booking.objects.filter(doctor= doctor)
-        if not bookings:
-            return Response({"status":False,
-                        "data":None,
-                        "message":"No Appointments yet, add one at least."},
-                        status=status.HTTP_404_NOT_FOUND)
-        patient_booked=PatientBooking.objects.filter(booking__in=bookings)
-        if not patient_booked:
-            return Response({"status":False,
-                        "data":None,
-                        "message":"No patients yet."},
-                        status=status.HTTP_404_NOT_FOUND)
-        today = date.today()
-        patient_booked_to_delete = patient_booked.filter(booking__date__lt=today)
-        if patient_booked_to_delete:
-            patient_booked_to_delete.delete()  
-        patient_booked_today = patient_booked.filter(booking__date__gte=today).order_by('booking__id')
-        if not patient_booked_today:
-            return Response({"status":False,
-                        "data":None,
-                        "message":"No patients yet."},
-                        status=status.HTTP_404_NOT_FOUND)
-        serializer= self.serializer_class(patient_booked_today, many=True)
-        return Response({"status":True,
-                        "count":patient_booked_today.count(),
-                        "data":serializer.data,
-                        "message":"successful"},
-                        status=status.HTTP_200_OK)
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsDoctor]
+    serializer_class = GetTodayPatientSerializer
+
+    def list(self, request):
+        doctor = Doctor.objects.get(id=request.user.id)
+        bookings = Booking.objects.filter(doctor=doctor)
+        patient_booked_today = PatientBooking.objects.filter(
+            booking__in=bookings,
+            booking__date__gte=date.today(),
+        ).order_by('booking__id')
+
+        if not patient_booked_today.exists():
+            return Response({
+                "status": False,
+                "data": None,
+                "message": "No patients yet."
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = self.serializer_class(patient_booked_today, many=True)
+        return Response({
+            "status": True,
+            "count": patient_booked_today.count(),
+            "data": serializer.data,
+            "message": "successful"
+        }, status=status.HTTP_200_OK)
 
 class GetBookedPatientsInSpecificClinic(generics.ListAPIView):
     authentication_classes =[ TokenAuthentication,]
@@ -638,9 +632,9 @@ class GetBookedPatientsInSpecificClinic(generics.ListAPIView):
                         "message":"No patients yet."},
                         status=status.HTTP_404_NOT_FOUND)
         today = date.today()
-        patient_booked_to_delete = patient_booked.filter(booking__date__lt=today)
-        if patient_booked_to_delete:
-            patient_booked_to_delete.delete()  
+        # patient_booked_to_delete = patient_booked.filter(booking__date__lt=today)
+        # if patient_booked_to_delete:
+        #     patient_booked_to_delete.delete()  
         patient_booked_today = patient_booked.filter(booking__date__gte=today).order_by('id')
         if not patient_booked_today:
             return Response({"status":False,
@@ -677,9 +671,9 @@ class GetBookedPatientsInSpecificBooking(generics.ListAPIView):
                         "message":"No patients yet."},
                         status=status.HTTP_404_NOT_FOUND)
         today = date.today()
-        patient_booked_to_delete = patient_booked.filter(booking__date__lt=today)
-        if patient_booked_to_delete:
-            patient_booked_to_delete.delete()  
+        # patient_booked_to_delete = patient_booked.filter(booking__date__lt=today)
+        # if patient_booked_to_delete:
+        #     patient_booked_to_delete.delete()  
         patient_booked_today = patient_booked.filter(booking__date__gte=today)
         if not patient_booked_today:
             return Response({"status":False,
@@ -710,18 +704,18 @@ class GetTodayBookedPatientsInClinic(generics.ListAPIView):
         doctor = Doctor.objects.get(id =request.user.id)
         today = date.today()
         bookings= Booking.objects.filter(doctor= doctor, date=today)
-        # if not bookings:
-        #     return Response({"status":False,
-        #                 "data":None,
-        #                 "message":"No Appointments match today yet."},
-        #                 status=status.HTTP_404_NOT_FOUND)
+        if not bookings:
+            return Response({"status":False,
+                        "data":None,
+                        "message":"No Appointments match today yet."},
+                        status=status.HTTP_200_OK)
         patient_booked = PatientBooking.objects.filter(booking__in=bookings).order_by('booking__id','id')
         today_patient_consultaion = Prescription.objects.filter(doctor=doctor ,next_consultation=today, cancelation_date__isnull=True)
         if not patient_booked and not today_patient_consultaion:
             return Response({"status":False,
                         "data":None,
                         "message":"No patients yet."},
-                        status=status.HTTP_404_NOT_FOUND)
+                        status=status.HTTP_200_OK)
         serializer= self.serializer_class(patient_booked, many=True)
         serializer2=GetPrescriptionDoctorPatientClinicalSerializer(today_patient_consultaion, many = True)
         return Response({"status":True,
@@ -777,7 +771,7 @@ class GetMyActivePrescription(generics.ListAPIView):
         try:
             prescription=Prescription.objects.get(patient = patient,cancelation_date__isnull=True)
         except Prescription.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)            
+            return Response({"status":False,"data":None,"message":"No new prescription yet."},status=status.HTTP_200_OK)
         doctor = Doctor.objects.get(id = prescription.doctor.id)
         clinical = Clinical.objects.get (id =prescription.clinical.id)
         drugs = Drug.objects.filter(prescription=prescription.id)
@@ -823,10 +817,9 @@ class GetMyOldPrescriptions(generics.ListAPIView):
     authentication_classes = [TokenAuthentication,]
     def get(self, request):
         patient= Patient.objects.get(id= request.user.id)
-        try:
-            old_prescriptions = Prescription.objects.filter(patient = patient, cancelation_date__isnull=False ).order_by('-id')
-        except Prescription.DoesNotExist:
-            return Response({"status":False,"data":None,"message":"No prescriptions yet."},status=status.HTTP_404_NOT_FOUND)
+        old_prescriptions = Prescription.objects.filter(patient = patient, cancelation_date__isnull=False ).order_by('-id')
+        if not old_prescriptions:
+            return Response({"status":False,"data":None,"message":"No prescriptions yet."},status=status.HTTP_200_OK)
         serializer=[]
         for p in old_prescriptions:
             doctor = Doctor.objects.get(id = p.doctor.id)
@@ -845,11 +838,9 @@ class GetSpecificOldPrescription(generics.ListAPIView):
     def get(self, request,p_id):
         patient= Patient.objects.get(id= request.user.id)
         try:
-            old_prescriptions = Prescription.objects.get(id = p_id)
+            old_prescriptions = Prescription.objects.get(id = p_id,patient= patient)
         except Prescription.DoesNotExist:
-            return Response({"message":"No prescription with this id"},status=status.HTTP_404_NOT_FOUND)
-        if old_prescriptions.patient.id != patient.id :
-            return Response({"message":"No prescription with this id"},status=status.HTTP_404_NOT_FOUND)
+            return Response({"status":False,"data":None,"message":"No prescriptions with this ID."},status=status.HTTP_200_OK)
         doctor = Doctor.objects.get(id = old_prescriptions.doctor.id)
         clinical = Clinical.objects.get (id =old_prescriptions.clinical.id)
         drugs = Drug.objects.filter(prescription=old_prescriptions.id)
@@ -871,7 +862,7 @@ class GetSpecificOldPrescription(generics.ListAPIView):
                       "screens":screens_serializer,
                       "medical_analysis":medical_analysis_serializer}
                     
-        return Response(serializer,status=status.HTTP_200_OK)
+        return Response({"status":True,"data":serializer,"message":"Success"},status=status.HTTP_200_OK)
     
     
 
@@ -989,13 +980,46 @@ class GetMyAllAppointmentsForDoctor(generics.ListAPIView):
                         "message":"success"},
                     status=status.HTTP_200_OK)
         
+class GetMyAllAppointmentsForPatient(generics.ListAPIView):
+    permission_classes = [IsPatient,]
+    authentication_classes = [TokenAuthentication,]
+    serializer_class= BookingSerializer
+    def get(self, request,d_id,id):
+        doctor = Doctor.objects.get(id = d_id)
+        try:
+            appointment = Booking.objects.get(doctor=doctor,id =id)
+        except Booking.DoesNotExist:
+            return Response({"status":False,
+                        "data":None,
+                        "message":" Error 404.<br> No Appointment with this id."},
+                    status=status.HTTP_404_NOT_FOUND)
+        patient_number = PatientBooking.objects.filter(booking__id=id).count() +1
+        serializer = self.serializer_class(appointment,many = False)
+        doctor_serializer = GetDoctorSerializer(doctor, many= False)
+        return Response({"status":True,
+                        "data": serializer.data,
+                        "doctor_data":doctor_serializer.data,
+                        "patient_number":patient_number,
+                        "message":"success"},
+                    status=status.HTTP_200_OK)
+        
 class GetAllAppointmentsForDoctor(generics.ListAPIView):
     permission_classes = [IsPatient,]
     authentication_classes = [TokenAuthentication,]
     serializer_class= BookingSerializer
     def get(self, request,id):
-        doctor = Doctor.objects.get(id =id)
-        my_all_appointments = Booking.objects.filter(doctor=doctor)
+        # doctor = Doctor.objects.get(id =id)
+        my_all_appointments = Booking.objects.filter(
+            Q(patientbooking__isnull=True) |
+            Q(allowed_number__gt=Subquery(
+                PatientBooking.objects.filter(
+                    booking_id=OuterRef('id')
+                ).values('booking_id').annotate(
+                    count=Count('booking_id')
+                ).values('count')
+            )),
+            doctor=id,
+        )
         if not my_all_appointments:
             return Response({"status":False,
                         "data":None,
@@ -1108,6 +1132,65 @@ class GetSpecificClinical(generics.ListAPIView):
                             "data":None,
                             "message":"successful"},
                         status=status.HTTP_200_OK)  
+        
+class BookingApi(generics.ListAPIView):
+    authentication_classes = [TokenAuthentication,]
+    permission_classes = [IsPatient,]
+    def get(self,request , id):
+        appointment = Booking.objects.get(id = id)
+        patients_have_booked = PatientBooking.objects.filter(booking__id=id).count() 
+        if (appointment.allowed_number == patients_have_booked):
+            return Response ({"status":False,
+                              "data":None,
+                              "message":"The appointment is completed."},status=status.HTTP_400_BAD_REQUEST)
+        elif (appointment.allowed_number > patients_have_booked):
+            patient = Patient.objects.get(id= request.user.id)
+            try:
+                PatientBooking.objects.get(patient = patient)
+                return Response ({"status":False,
+                              "data":None,
+                              "message":"You already booked an appointment."},status=status.HTTP_400_BAD_REQUEST)
+            except PatientBooking.DoesNotExist:                
+                PatientBooking.objects.create(
+                    patient= patient,
+                    booking = appointment
+                )
+                return Response ({"status":True,
+                              "data":None,
+                              "message":"Success."},status=status.HTTP_200_OK)
+        return Response ({"status":False,
+                              "data":None,
+                              "message":"Error."},status=status.HTTP_400_BAD_REQUEST)
+        
+        
+class GetInterAction(generics.CreateAPIView):
+    authentication_classes = [TokenAuthentication,]
+    permission_classes = [IsDoctor,]
+    def post(self, request):
+        if request.data:
+            base = request.data['base']
+            new= request.data['new']
+            try:
+                new_drug=StandardDrugs.objects.get(name=new)
+                base_drugs= StandardDrugs.objects.filter(name=base).all()
+                base_drugs=base_drugs.values_list('activeIngredient', flat=True)
+                interaction =ingredient_interaction.objects.filter(first=new_drug.activeIngredient,
+                            second__in=base_drugs
+                            ) or ingredient_interaction.objects.filter(
+                            first__in=base_drugs,
+                            second=new_drug.activeIngredient)
+                if interaction:
+                    serializer =ser.serialize('json', interaction)
+                    return Response({"status":True,"data":serializer,"message":"Success"},status=status.HTTP_200_OK)
+                else:
+                    return Response({"status":False,"data":None,"message":"No interactions"},status=status.HTTP_200_OK)
+                    
+            except StandardDrugs.DoesNotExist:
+                return Response({"status":False,"data":None,"message":"No Drugs with this name"},status=status.HTTP_200_OK)
+        else:
+                return Response({"status":False,"data":None,"message":"Please Enter new and base"},status=status.HTTP_400_BAD_REQUEST)
+            
+        
 # api_view(['GET','POST'])
 # def makePrescription(request):
 #     if request.method == 'GET':

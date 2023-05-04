@@ -1,6 +1,7 @@
 import uuid
 from accounts.helper import activateEmail
 from .models import *
+from prescription.models import *
 from .serializers import *
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
@@ -171,7 +172,18 @@ def FBV_pk_doctor(request,id):
     #GET
     if request.method == 'GET':    
         serializer = DoctorSerializer(doctor)
-    return Response({"status":True,"data":serializer.data,"message":"Success"},status=status.HTTP_200_OK)    
+        if Prescription.objects.filter(patient=request.user.id, doctor=doctor).exists():
+            return Response({"status":True,
+                             "data":serializer.data,
+                             "p_id":request.user.id,
+                             "isCanRate":True,
+                             "message":"Success"},status=status.HTTP_200_OK)    
+        else:
+            return Response({"status":True,
+                             "data":serializer.data,
+                             "p_id":request.user.id,
+                             "isCanRate":False,
+                             "message":"Success"},status=status.HTTP_200_OK)
     # #PUT
     # elif request.method == 'PUT':
     #     doctor_data =DoctorSerializer(doctor,data= request.data)
@@ -295,7 +307,7 @@ class MyProfileDoctor(generics.ListAPIView):
         serializer = self.serializer_class(doctor,many=False)
         return Response({"status":True,"data":serializer.data,"message":"This is your profile"}, status=status.HTTP_200_OK)
             
-class DoctorRate(generics.CreateAPIView):
+class DoctorRate(generics.CreateAPIView, generics.DestroyAPIView):
     # queryset= Doctor.objects.all()
     permission_classes = [IsPatient,]
     serializer_class = RatingSerializer
@@ -339,6 +351,16 @@ class DoctorRate(generics.CreateAPIView):
                 'message':'Doctor rate not send',
             }
             return Response(json,status=status.HTTP_400_BAD_REQUEST)
+    def delete ( self,request, id):
+        try:
+            doctor= Doctor.objects.get(id=id)
+        except Doctor.DoesNotExist:
+            return response(status=status.HTTP_404_NOT_FOUND)
+        # doctor = request.data['doctor']
+        patient = Patient.objects.get(id= request.user.id)
+        rate = Rating.objects.get(patient=patient, doctor=doctor)
+        rate.delete()
+        return Response(status=status.HTTP_200_OK)
                         
 class RatingAPI(viewsets.ModelViewSet):
     queryset= Rating.objects.all()

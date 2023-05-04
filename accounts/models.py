@@ -1,24 +1,20 @@
 from django.db import models
 from django.contrib.auth.base_user import BaseUserManager
-from django.contrib.auth.models import AbstractUser,AbstractBaseUser,PermissionsMixin
+from django.contrib.auth.models import AbstractBaseUser,PermissionsMixin
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
-from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.utils import timezone
 from .validate import Validation
-from django.db.models.signals import post_save
 from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
-from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.urls import reverse
 from django_rest_passwordreset.signals import reset_password_token_created
 from django.core.mail import send_mail  
-from datetime import date, timedelta
-from django.contrib.auth import update_session_auth_hash
-import random
+from datetime import date
+from django.utils import timezone
 
+# from prescription.models import Booking
 # Create your models here.
 
 validate = Validation()
@@ -193,6 +189,7 @@ class Admin(User,UserInheritance):
     
 class Patient (User,UserInheritance):
     doctor_id = models.ForeignKey("Doctor", verbose_name=("Doctor_id"), on_delete=models.CASCADE,blank=True, null=True)
+    # booking = models.ForeignKey('prescription.Booking',on_delete=models.PROTECT,blank=True, null=True)
     # def get_age ():
     #     age= UserInheritance.objects.get()
         
@@ -218,11 +215,12 @@ class Doctor(User,UserInheritance):
         return len(rating)
     
     def ratingDetails(self):
-        rating = Rating.objects.filter(doctor =self)
+        rating = Rating.objects.filter(doctor =self,feedback__isnull=False).order_by('-id')[:12]
         ratingDetails=[]
         for r in rating:
             all_name=r.patient.first_name+' '+r.patient.last_name
-            s={"name":all_name,"stars":r.stars,"feedback":r.feedback,'date':r.date}
+            p_id=r.patient.id
+            s={"p_id":p_id,"name":all_name,"stars":r.stars,"feedback":r.feedback,'date':r.date}
             ratingDetails.append(s)
         return ratingDetails
     
@@ -250,7 +248,7 @@ class Rating (models.Model):
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
     stars = models.PositiveSmallIntegerField(validators=[MinValueValidator(1),MaxValueValidator(5)])
     feedback = models.TextField(null=True,blank=True)
-    date =models.DateField(default=date.today())
+    date =models.DateField(default=timezone.now)
     
     class Meta:
         unique_together =(('doctor','patient'),)
@@ -276,62 +274,3 @@ def password_reset_token_created(sender, instance, reset_password_token, *args, 
         # to:
         [reset_password_token.user.email]
     )
-    
-# @receiver(post_save, sender=settings.AUTH_USER_MODEL)
-# def tokenCreate(sender, instance, created, **kwargs):
-#     if created:
-#         Token.objects.create(user= instance)       
-#         print(instance)
-
-        
-# class MultiToken(Token):
-#     n_user = models.ForeignKey(  # changed from OneToOne to ForeignKey
-#     settings.AUTH_USER_MODEL, related_name='tokens',
-#     on_delete=models.CASCADE, verbose_name=_("User")
-# )        
-
-        
-        
-        
-        
-        
-# class CustomAccountManger(BaseUserManager):   
-#     def create_user(self, email, password,first_name,last_name, **extra_fields): 
-
-# class User(AbstractBaseUser,PermissionsMixin):
-#     email = models.EmailField(_("email address"), unique= True)
-#     first_name = models.CharField(_("first name"), max_length=50,blank=True)
-#     last_name = models.CharField(_("last name"), max_length=50,blank=True)
-#     date_birth = models.DateField(null=True)
-#     phone = models.CharField(max_length=10,validators=[validate_phone],blank=True)
-#     city = models.CharField(max_length=30, choices=CITIES)
-#     avatar = models.ImageField(upload_to=image_upload)
-#     is_staff= models.BooleanField(default=False)
-#     is_active= models.BooleanField(default=False)
-    
-#     USERNAME_FIELD='email'
-#     EMAIL_FIELD ='email'
-#     REQUIRED_FIELDS = ['email']
-        
-
-# class Profile(models.Model):
-#     user = models.OneToOneField(User, related_name='user',on_delete=models.CASCADE)
-#     city = models.ForeignKey('City', related_name='user_city', on_delete=models.CASCADE ,blank=True, null=True )
-#     phone = models.CharField(max_length=10,validators=[validate_phone])
-#     avatar = models.ImageField(_("profile image"), upload_to='profile/')
-    
-#     def __str__(self) :
-#         return str(self.user)
-    
-    
-# @receiver(post_save, sender=User)
-# def create_user_profile(sender, instance, created, **kwargs):
-#     if created:
-#         Profile.objects.create(user=instance)
-    
-    
-# class City(models.Model):
-#     name=models.CharField(max_length=30)
-    
-#     def __str__(self) :
-#         return str(self.name)

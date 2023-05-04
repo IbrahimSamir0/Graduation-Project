@@ -1,6 +1,6 @@
 from django.db import models
 from accounts.models import Doctor, Patient
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.utils.translation import gettext_lazy as _
 from datetime import date , timedelta
 from threading import Timer
@@ -81,7 +81,7 @@ class Prescription(models.Model):
 class active_Ingredient (models.Model):
     id = models.IntegerField(primary_key=True, db_index=True, unique=True)
     name=models.CharField(("Ingredient name"), max_length=100)
-    if_interaction_exist= models.BooleanField(default=False)
+    if_interaction_exist= models.BooleanField(default=None)
 
     def __str__(self):
         return self.name
@@ -123,7 +123,10 @@ class Drug (models.Model):
     name_if_doesnt_exist= models.CharField(max_length=100,null=True, blank=True)
     
     def __str__(self):
-        return self.drug.name
+        if self.drug is not None:
+            return self.drug.name
+        else:
+            return self.name_if_doesnt_exist
 
 
 class Clinical (models.Model):
@@ -155,7 +158,7 @@ class Screen (models.Model):
     prescription = models.ForeignKey("Prescription", on_delete=models.CASCADE)
     patient =models.ForeignKey(Patient, on_delete=models.CASCADE)
     deadline= models.DateField()
-    is_done = models.BooleanField(default=False)
+    # is_done = models.BooleanField(default=False)  
     
     def __str__(self):
         return self.screen.name
@@ -192,6 +195,14 @@ class Booking(models.Model):
     end = models.TimeField()
     allowed_number = models.PositiveSmallIntegerField()
     
+    def ifLessThanAllowedNumber(self):
+        patients=PatientBooking.objects.filter(booking=self.id).count()
+        if patients <self.allowed_number:
+            return True
+        else:
+            return False
+        
+            
     def getDayOfWeek(self):
         obj = Booking.objects.get(id=self.id)
         return obj.date.strftime('%A')
@@ -210,10 +221,16 @@ class Booking(models.Model):
         obj=Booking.objects.get(id=self.id)
         return obj.end.strftime('%I:%M %p')
     
-    
-    def numberOfPatients(self):
-        num = PatientBooking.objects.filter(booking=self).aggregate(Count('id'))['id__count']
-        return num
+    def isExpired(self):
+        try:
+            if date.today() > self.date:
+                self.date= self.date + timedelta(weeks=1)
+                self.save()
+        except Exception as e:
+            print (e)
+    # def numberOfPatients(self):
+    #     num = PatientBooking.objects.filter(booking=self).aggregate(Count('id'))['id__count']
+    #     return num
     
     def __str__(self):
         return f"{self.date.strftime('%A')}  {self.date} ({self.start.strftime('%I:%M %p')})"

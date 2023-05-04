@@ -7,6 +7,9 @@ class PrescriptionConfig(AppConfig):
     #     from .scheduler.scheduler import ExampleThread
     #     thread = ExampleThread()
     #     thread.start()
-    #     # do other things
-    #     # thread.join()
+        
+        
+        # thread.stop()
+        # do other things
+        # thread.join()
         
