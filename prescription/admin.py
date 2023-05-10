@@ -10,5 +10,6 @@ admin.site.register(TestScreen)
 admin.site.register(StandardMedicalAnalysis)
 admin.site.register(MedicalAnalysis)
 admin.site.register(Booking)
+admin.site.register(ChronicDiseases)
 admin.site.register(PatientBooking)
 # Register your models here

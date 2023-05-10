@@ -8,6 +8,7 @@ from django.http.response import JsonResponse
 from rest_framework.fields import CurrentUserDefault
 from django.utils import timezone
 import datetime
+from accounts.models import PatientDiseases, Patient
 
 # class Clinicals(serializers.Serializer):
 #     clinicall = serializers.ChoiceField(choices=[Clinical.objects.get(doctor = 9)])    
@@ -402,3 +403,20 @@ class CancelMyPrescriptionSerializer(serializers.Serializer):
     
     
     
+class ChronicDiseaseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChronicDiseases
+        fields=['id','disease']
+    
+class GetPatientDiseaseSerializer(serializers.ModelSerializer):
+    disease=ChronicDiseaseSerializer()
+    class Meta:
+        model = PatientDiseases
+        fields=['disease','disease_date']
+        
+class PatientDiseasesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PatientDiseases
+        fields = [ 'disease', 'disease_date']
+
+        

@@ -1,10 +1,11 @@
 from django.contrib import admin
-from .models import  Patient, Doctor, Admin, User,Rating
+from .models import *
 from django.contrib.auth.models import Group
 # Register your models here.
 
 # admin.site.register(User)
 admin.site.register(Admin)
+admin.site.register(PatientDiseases)
 # admin.site.register(Patient)
 # admin.site.register(Doctor)
 

@@ -1190,7 +1190,58 @@ class GetInterAction(generics.CreateAPIView):
         else:
                 return Response({"status":False,"data":None,"message":"Please Enter new and base"},status=status.HTTP_400_BAD_REQUEST)
             
-        
+
+class MyPatientDisease(generics.ListCreateAPIView):
+    authentication_classes= [TokenAuthentication,]
+    permission_classes= [IsPatient,]
+    serializer_class=GetPatientDiseaseSerializer
+    
+    def get(self, request):
+        patient = Patient.objects.get(id = request.user.id)
+        disease = PatientDiseases.objects.filter(patinet=patient)
+        if not disease:
+            return Response({"status":False,
+                         "data":None,
+                         "message":"No disease"}
+                        ,status=status.HTTP_200_OK)
+        serializer = self.serializer_class(disease, many = True)
+        return Response({"status":True,
+                         "data":serializer.data,
+                         "message":"Success"}
+                        ,status=status.HTTP_200_OK)
+    def post(self, request):
+        serializer=PatientDiseasesSerializer(data= request.data)
+        serializer.is_valid(raise_exception=True)
+        patient = Patient.objects.get(id = request.user.id)
+        try:
+            PatientDiseases.objects.get(patinet=patient, disease=serializer.validated_data['disease'])
+            return Response({"status":False,
+                         "data":None,
+                         "message":"This disease already exist."}
+                        ,status=status.HTTP_400_BAD_REQUEST)
+            
+        except PatientDiseases.DoesNotExist :
+            PatientDiseases.objects.create(
+                patinet=patient,
+                disease=serializer.validated_data['disease'],
+                disease_date=serializer.validated_data['disease_date'],
+            )
+            return Response({"status":True,
+                         "data":None,
+                         "message":"Success"}
+                        ,status=status.HTTP_201_CREATED)
+            
+            
+class ChronicDiseaseView(generics.ListAPIView):
+    authentication_classes= [TokenAuthentication,]
+    permission_classes= [IsPatient,]
+    serializer_class=ChronicDiseaseSerializer
+    
+    def get(self, request):
+        chronic_disease= ChronicDiseases.objects.all()
+        serializer =self.serializer_class(chronic_disease, many=True)
+        return Response({"status":True,"data":serializer.data,"message":"Sucssess"},status=status.HTTP_200_OK)
+
 # api_view(['GET','POST'])
 # def makePrescription(request):
 #     if request.method == 'GET':

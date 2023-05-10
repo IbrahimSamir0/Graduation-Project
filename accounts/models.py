@@ -189,6 +189,7 @@ class Admin(User,UserInheritance):
     
 class Patient (User,UserInheritance):
     doctor_id = models.ForeignKey("Doctor", verbose_name=("Doctor_id"), on_delete=models.CASCADE,blank=True, null=True)
+    disease = models.ManyToManyField("prescription.ChronicDiseases", through='PatientDiseases')
     # booking = models.ForeignKey('prescription.Booking',on_delete=models.PROTECT,blank=True, null=True)
     # def get_age ():
     #     age= UserInheritance.objects.get()
@@ -200,6 +201,19 @@ class Patient (User,UserInheritance):
         verbose_name = 'Patient'
         verbose_name_plural = 'Patients'
         # db_table ='patient'
+          
+
+class PatientDiseases(models.Model):
+    patinet= models.ForeignKey(Patient, on_delete=models.CASCADE)
+    disease= models.ForeignKey("prescription.ChronicDiseases", on_delete=models.CASCADE)
+    disease_date= models.IntegerField(validators=[MinValueValidator(1900), MaxValueValidator(2100)])
+    class Meta:
+        unique_together =(('disease','patinet'),)
+        index_together =(('disease','patinet'),)
+    
+    def __str__(self):
+        return f"{self.patinet.username} ({self.disease.disease})"
+
 
 class Doctor(User,UserInheritance):
     # doctor_number = models.CharField(max_length=10,unique=True,validators=[doctorValidate])

@@ -44,6 +44,8 @@ urlpatterns = [
     path('update_my_screen/<int:id>/',views.AddOrUpdateScreenForPatient.as_view(),name='AddOrUpdateScreenForPatient'),
     path('get_my_screens/<int:id>/',views.GetMySpecificScreens.as_view(),name='GetMySpecificOldScreens'),
     # path('get_my_active_screeen/',views.GetMyActiveScreen.as_view(),name='GetMyActivePrescription'),
+    path('get_my_diseases/',views.MyPatientDisease.as_view()),
+    path('get_all_chronic_diseases/',views.ChronicDiseaseView.as_view()),
     
     # path('set_drug/',views.SetDrug.as_view(), name='SetDrug'),   
 ]

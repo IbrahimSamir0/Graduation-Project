@@ -244,16 +244,12 @@ class PatientBooking(models.Model):
     
     def __str__(self):
         return f"{self.booking.date.strftime('%A')}  {self.booking.date} ({self.booking.start.strftime('%I:%M %p')})"
-
-    # def save(self, *args, **kwargs):
-    #     if self.text:
-    #         # Convert the image to a base64-encoded string
-    #         with open(self.text.path, 'rb') as f:
-    #             encoded_string = base64.b64encode(f.read()).decode('utf-8')
-    #         self.text = encoded_string
-
-    #     super(TestScreen, self).save(*args, **kwargs)
     
-# class ClinicalPrescription(models.Model):
-#     prescription=models.ForeignKey("Prescription",related_name='Prescription_id', on_delete=models.CASCADE)
-#     clinical =models.ForeignKey("Clinical", related_name='Clinical_id', on_delete=models.CASCADE)
+
+class ChronicDiseases(models.Model):
+    disease = models.CharField(max_length=500)
+    
+    def __str__(self):
+        return self.disease
+
+    
