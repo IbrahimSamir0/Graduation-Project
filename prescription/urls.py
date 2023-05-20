@@ -20,6 +20,7 @@ urlpatterns = [
     path('get_specific_clinic_booked_patients/<int:id>/',views.GetBookedPatientsInSpecificClinic.as_view(), name='GetBookedPatientsInEachClinic'),
     path('get_specific_appointment_booked_patients/<int:id>/',views.GetBookedPatientsInSpecificBooking.as_view(), name='GetBookedPatientsInEachClinic'),
     path('get_Today_booked_patients/',views.GetTodayBookedPatientsInClinic.as_view(), name='GetBookedPatientsInEachClinic'),
+    path('get_Today_booked_patients_first_10/',views.GetTodayBookedPatientsInClinicFirst10.as_view(), name='GetTodayBookedPatientsInClinicFirst10'),
     
     path('drug_deteails/',views.DrugDeteails.as_view(),name='DrugDeteails'),
     path('get_interAction/',views.GetInterAction.as_view(),name='DrugDeteails'),
@@ -44,8 +45,16 @@ urlpatterns = [
     path('update_my_screen/<int:id>/',views.AddOrUpdateScreenForPatient.as_view(),name='AddOrUpdateScreenForPatient'),
     path('get_my_screens/<int:id>/',views.GetMySpecificScreens.as_view(),name='GetMySpecificOldScreens'),
     # path('get_my_active_screeen/',views.GetMyActiveScreen.as_view(),name='GetMyActivePrescription'),
+    path('get_my_tests/',views.GetMyMedicalAnlaysis.as_view(),name='GetMyMedicalAnlaysis'),
+    path('update_my_test/<int:id>/',views.AddOrUpdateMedicalAnalysisForPatient.as_view(),name='AddOrUpdateMedicalAnalysisForPatient'),
+    path('get_my_test/<int:id>/',views.GetMySpecificScreens.as_view(),name='GetMySpecificOldScreens'),
+    
     path('get_my_diseases/',views.MyPatientDisease.as_view()),
     path('get_all_chronic_diseases/',views.ChronicDiseaseView.as_view()),
+    path('get_all_standard_screens/',views.StandardScreensView.as_view()),
+    path('get_all_standard_tests/',views.StandardTestView.as_view()),
+    
+    path('commitment/<int:id>/',views.CommitmentView.as_view()),
     
     # path('set_drug/',views.SetDrug.as_view(), name='SetDrug'),   
 ]

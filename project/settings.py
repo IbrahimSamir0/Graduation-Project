@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     'django_rest_passwordreset',
     'django_apscheduler',
     'corsheaders',
-    'celery',
+    # 'celery',
     
     #installed apps :
     'home',
@@ -202,11 +202,12 @@ MEDIA_ROOT = os.path.join(BASE_DIR , "media")
 # Email Settings :
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_FROM = 'ebrahim.ssamer77@gmail.com'
-EMAIL_HOST_USER = 'ebrahim.ssamer77@gmail.com'
-EMAIL_HOST_PASSWORD = 'dbuhyofarsbthubl'
+EMAIL_FROM = 'bronco360c@gmail.com'
+EMAIL_HOST_USER = 'bronco360c@gmail.com'
+EMAIL_HOST_PASSWORD = 'xshqtjkpoyfpdsso'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
 
 PASSWORD_RESET_TIMEOUT = 14400
 
@@ -222,8 +223,8 @@ LOGIN_URL = 'login'
 LOGOUT_URL = 'logout'
 LOGIN_REDIRECT_URL = 'home'
 
-SOCIAL_AUTH_FACEBOOK_KEY = '489638043241073'  # App ID
-SOCIAL_AUTH_FACEBOOK_SECRET = '676207c3c6938667a372d3c159df463e'  # App Secret
+# SOCIAL_AUTH_FACEBOOK_KEY = '489638043241073'  # App ID
+# SOCIAL_AUTH_FACEBOOK_SECRET = '676207c3c6938667a372d3c159df463e'  # App Secret
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 #  <a href="{% url 'social:begin' 'facebook' %}">Login with Facebook</a>
 # CACHES = {

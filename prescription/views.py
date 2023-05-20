@@ -10,14 +10,13 @@ from .permissions import IsDoctor , IsPatient
 from rest_framework.permissions import AllowAny
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import api_view
-from datetime import date 
+from datetime import date ,datetime,timedelta
 from django.core.cache import cache
-from .bot.run import RUN
+# from .bot.run import RUN
+# from .zoz.run import RUN
 import threading
 from django.db.models import F, Q, OuterRef, Subquery 
 from django.core import serializers as ser
-
-
 
 
 
@@ -161,6 +160,12 @@ class SetPrescription(generics.CreateAPIView):
     serializer_class = SetPrescriptionSerializer
         
     def run(self,doctor,patient,patient_id,serializer,drugs,screens,medical_analysis):
+        try:
+            cancel_prescription=Prescription.objects.get(patient=patient,cancelation_date__isnull=True)
+            cancel_prescription.cancelation_date = date.today()
+            cancel_prescription.save()
+        except Prescription.DoesNotExist:
+            pass
         prescription= Prescription.objects.create(
         doctor =doctor,
         patient =patient,
@@ -172,15 +177,16 @@ class SetPrescription(generics.CreateAPIView):
             try:
                 _drug = StandardDrugs.objects.get(name=drug['drug_name'])
             except StandardDrugs.DoesNotExist:
-                run = RUN()
-                run.open()
-                err_list =run.prepare_drugs([drug['drug_name']])
-                if not err_list:
-                    _drug = StandardDrugs.objects.get(name=drug['drug_name'])
-                else:
-                    _drug= None
+                pass
+                # run = RUN()
+                # run.open()
+                # err_list =run.prepare_drugs([drug['drug_name']])
+                # if not err_list:
+                #     _drug = StandardDrugs.objects.get(name=drug['drug_name'])
+                # else:
+                #     _drug= None
             if _drug is not None:
-                Drug.objects.create(
+                new_drug=Drug.objects.create(
                     prescription = prescription,
                     # **drug
                     consentration = drug['consentration'],
@@ -188,9 +194,20 @@ class SetPrescription(generics.CreateAPIView):
                     end_in = drug['end_in'],
                     dose_per_hour = drug['dose_per_hour']
                     )
+                time_difference = datetime.combine(drug['end_in'], timezone.now().time()) - datetime.combine(timezone.now().date(), timezone.now().time())
+                difference_in_hours = int(time_difference.total_seconds() / 3600)
+                num_of_times=int(difference_in_hours/drug['dose_per_hour'])
+                current_time =timezone.now()
+                
+                for _ in range(num_of_times):
+                # if current_time <= drug['end_in']:
+                    current_time += timedelta(hours=drug['dose_per_hour'])
+                    PatientCommitment.objects.create(drug=new_drug, 
+                                                    date=current_time
+                                                    ,patient=patient)
             else:
                 if drug['drug_name'] in err_list:
-                    Drug.objects.create(
+                    newdrug=Drug.objects.create(
                         prescription = prescription,
                         # **drug
                         consentration = drug['consentration'],
@@ -198,6 +215,17 @@ class SetPrescription(generics.CreateAPIView):
                         end_in = drug['end_in'],
                         dose_per_hour = drug['dose_per_hour']
                         )
+                    time_difference = datetime.combine(drug['end_in'], timezone.now().time()) - datetime.combine(timezone.now().date(), timezone.now().time())
+                    difference_in_hours = int(time_difference.total_seconds() / 3600)
+                    num_of_times=int(difference_in_hours/drug['dose_per_hour'])
+                    current_time =timezone.now()
+                    
+                    for _ in range(num_of_times):
+                    # if current_time <= drug['end_in']:
+                        current_time += timedelta(hours=drug['dose_per_hour'])
+                        PatientCommitment.objects.create(drug=newdrug, 
+                                                        date=current_time
+                                                        ,patient=patient)
         for screen in screens:
             Screen.objects.create(
                 prescription = prescription,
@@ -210,8 +238,10 @@ class SetPrescription(generics.CreateAPIView):
                 patient = Patient.objects.get(id= patient_id),
                 **m
                 )
-        objs = Prescription.objects.filter(cancelation_date__isnull=True).exclude(id=prescription.id)
-        objs.update(cancelation_date=date.today())
+        patient_booking=PatientBooking.objects.get(patient=patient,doctor=doctor)
+        patient_booking.delete()
+        # objs = Prescription.objects.filter(cancelation_date__isnull=True).exclude(id=prescription.id)
+        # objs.update(cancelation_date=date.today())
 
 
     
@@ -378,7 +408,65 @@ class GetMySpecificScreens(generics.ListAPIView):
                              "message":"No Screens yet"},
                             status=status.HTTP_200_OK)
         
+class GetPatientScreens(generics.ListAPIView):
+    authentication_classes =[TokenAuthentication,]
+    permission_classes = [IsDoctor,]
+    serializer_class = PostScreenSerializer
+    def get(self,request,id):
+        patient = Patient.objects.get(id = id)
+        screens = Screen.objects.filter(patient=patient).order_by('-id')
+        serializer = self.serializer_class(screens, many= True)
+        return Response({"status":True,"data":serializer.data,"message":"Success"},status=status.HTTP_200_OK)
+
+class GetPatientTests(generics.ListAPIView):
+    authentication_classes =[TokenAuthentication,]
+    permission_classes = [IsDoctor,]
+    serializer_class = PostMedicalaAnalysisSerializer
+    def get(self,request,id):
+        patient = Patient.objects.get(id = id)
+        tests = MedicalAnalysis.objects.filter(patient=patient).order_by('-id')
+        serializer = self.serializer_class(tests, many= True)
+        return Response({"status":True,"data":serializer.data,"message":"Success"},status=status.HTTP_200_OK)
+
+
+class GetMyMedicalAnlaysis(generics.ListAPIView):
+    authentication_classes = [TokenAuthentication,]
+    permission_classes = [IsPatient,]
+    serializer_class=GetMedicalAnalysisSerializer
+    def get(self, request):
+        patient= Patient.objects.get(id=request.user.id)
+        tests = MedicalAnalysis.objects.filter(patient=patient).order_by('-id')
+        if not tests:
+            return Response({"status":False,
+                             "data":None,
+                             "message":"No Screens yet"},
+                            status=status.HTTP_404_NOT_FOUND)
+        serializer= self.serializer_class(tests, many= True)
+        return Response({"status":True,
+                         "data":serializer.data,"message":"True"},status=status.HTTP_200_OK)
         
+class AddOrUpdateMedicalAnalysisForPatient(generics.UpdateAPIView):
+    authentication_classes = [TokenAuthentication,]
+    permission_classes = [IsPatient,]
+    serializer_class=PostMedicalaAnalysisSerializer
+    def put(self, request,id):
+        test =MedicalAnalysis.objects.get(id= id)
+        serializer= self.serializer_class(test, data= request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"status":True,"data":serializer.data,"message":"Success"},status=status.HTTP_200_OK)
+        
+
+class GetPatientMedicalAnalysis(generics.ListAPIView):
+    authentication_classes =[TokenAuthentication,]
+    permission_classes = [IsDoctor,]
+    serializer_class = PostScreenSerializer
+    def get(self,request,id):
+        patient = Patient.objects.get(id = id)
+        tests = MedicalAnalysis.objects.filter(patient=patient).order_by('-id')
+        serializer = self.serializer_class(tests, many= True)
+        return Response({"status":True,"data":serializer.data,"message":"Success"},status=status.HTTP_200_OK)
+    
         
 # class GetMyActiveScreen(generics.ListAPIView):
 #     authentication_classes = [TokenAuthentication,]
@@ -432,29 +520,29 @@ class GetMySpecificScreens(generics.ListAPIView):
         
         
         
-class UserUploadedPicture(APIView):
+# class UserUploadedPicture(APIView):
     
-    # parser_classes = (parsers.MultiPartParser, parsers.FormParser)
-    serializer_class =PostScreenSerializer
-    def post(self,request, format=None):
+#     # parser_classes = (parsers.MultiPartParser, parsers.FormParser)
+#     serializer_class =PostScreenSerializer
+#     def post(self,request, format=None):
 
-        serializer = self.serializer_class(data= request.FILES)
-        # # image= request.data['new']
-        # # file= request.data['file']
-        # # file_path= request.data['file_path']
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        # image = request.data['new']
-        # new_screen= TestScreen.objects.create(new = image)
-        # new_screen.save()
-        return Response(status=status.HTTP_200_OK)
+#         serializer = self.serializer_class(data= request.FILES)
+#         # # image= request.data['new']
+#         # # file= request.data['file']
+#         # # file_path= request.data['file_path']
+#         serializer.is_valid(raise_exception=True)
+#         serializer.save()
+#         # image = request.data['new']
+#         # new_screen= TestScreen.objects.create(new = image)
+#         # new_screen.save()
+#         return Response(status=status.HTTP_200_OK)
 
     
-    def get(self,request):
-        obj = TestScreen.objects.all()
-        serializer = PostScreenSerializer(obj,many= True)
-        # serializer.is_valid(raise_exception=True)
-        return Response(serializer.data)
+#     def get(self,request):
+#         obj = TestScreen.objects.all()
+#         serializer = PostScreenSerializer(obj,many= True)
+#         # serializer.is_valid(raise_exception=True)
+#         return Response(serializer.data)
     
 # @api_view(['POST'])  
 # # @parser_classes([JSONParser,parsers.MultiPartParser, parsers.FormParser])
@@ -483,29 +571,29 @@ class UserUploadedPicture(APIView):
         
 #         return Response(status=status.HTTP_200_OK)
     
-@api_view(['POST'])    
-def UserUploadedPicture(request):
-    if request.method == 'POST' and request.FILES['new']:
-        image = request.FILES['new']
-        new_screen= TestScreen.objects.create(new = image)
-        new_screen.save()
-        return Response(status=status.HTTP_200_OK)
+# @api_view(['POST'])    
+# def UserUploadedPicture(request):
+#     if request.method == 'POST' and request.FILES['new']:
+#         image = request.FILES['new']
+#         new_screen= TestScreen.objects.create(new = image)
+#         new_screen.save()
+#         return Response(status=status.HTTP_200_OK)
     
 
-@api_view(['POST'])
-def upload_image(request):
-    try:
-        image = request.data['new']
-    except Exception as e:
-        return JsonResponse(ValidationError(_('not a valid SAMLRequest: {}').format(repr(e))))  
+# @api_view(['POST'])
+# def upload_image(request):
+#     try:
+#         image = request.data['new']
+#     except Exception as e:
+#         return JsonResponse(ValidationError(_('not a valid SAMLRequest: {}').format(repr(e))))  
 
-    # encoded_string = base64.b64encode(image.read()).decode('utf-8')
-    format,imgstr = image.split(';base64,')
+#     # encoded_string = base64.b64encode(image.read()).decode('utf-8')
+#     format,imgstr = image.split(';base64,')
     
-    obj= TestScreen.objects.create(text = imgstr)
-    obj.save()
+#     obj= TestScreen.objects.create(text = imgstr)
+#     obj.save()
 
-    return Response( status=status.HTTP_201_CREATED)
+#     return Response( status=status.HTTP_201_CREATED)
 
 
 class GetActiveDoctorPatients(generics.ListAPIView):
@@ -592,10 +680,11 @@ class GetAllBookedPatients(generics.ListAPIView):
 
         if not patient_booked_today.exists():
             return Response({
-                "status": False,
+                "status": True,
+                "count": patient_booked_today.count(),
                 "data": None,
                 "message": "No patients yet."
-            }, status=status.HTTP_404_NOT_FOUND)
+            }, status=status.HTTP_200_OK)
 
         serializer = self.serializer_class(patient_booked_today, many=True)
         return Response({
@@ -706,6 +795,7 @@ class GetTodayBookedPatientsInClinic(generics.ListAPIView):
         bookings= Booking.objects.filter(doctor= doctor, date=today)
         if not bookings:
             return Response({"status":False,
+                        "booking_count":0,
                         "data":None,
                         "message":"No Appointments match today yet."},
                         status=status.HTTP_200_OK)
@@ -713,6 +803,42 @@ class GetTodayBookedPatientsInClinic(generics.ListAPIView):
         today_patient_consultaion = Prescription.objects.filter(doctor=doctor ,next_consultation=today, cancelation_date__isnull=True)
         if not patient_booked and not today_patient_consultaion:
             return Response({"status":False,
+                        "booking_count":patient_booked.count(),
+                        "data":None,
+                        "message":"No patients yet."},
+                        status=status.HTTP_200_OK)
+        serializer= self.serializer_class(patient_booked, many=True)
+        serializer2=GetPrescriptionDoctorPatientClinicalSerializer(today_patient_consultaion, many = True)
+        return Response({"status":True,
+                         "total_count":patient_booked.count()+today_patient_consultaion.count(),
+                        "booking_count":patient_booked.count(),
+                        "consultaion_count":today_patient_consultaion.count(),
+                        "booking":serializer.data,
+                        "consultaion":serializer2.data,
+                        "message":"successful"},
+                        status=status.HTTP_200_OK)
+
+class GetTodayBookedPatientsInClinicFirst10(generics.ListAPIView):
+    authentication_classes =[ TokenAuthentication,]
+    permission_classes= [IsDoctor,]
+    serializer_class=GetTodayPatientSerializer
+    def get(self, request):
+        doctor = Doctor.objects.get(id =request.user.id)
+        today = date.today()
+        bookings= Booking.objects.filter(doctor= doctor, date=today)
+        if not bookings:
+            return Response({"status":False,
+                        "booking_count":0,
+                        "consultaion_count":0,
+                        "data":None,
+                        "message":"No Appointments match today yet."},
+                        status=status.HTTP_200_OK)
+        patient_booked = PatientBooking.objects.filter(booking__in=bookings).order_by('booking__id','id')[:5]
+        today_patient_consultaion = Prescription.objects.filter(doctor=doctor ,next_consultation=today, cancelation_date__isnull=True)[:5]
+        if not patient_booked and not today_patient_consultaion:
+            return Response({"status":False,
+                        "booking_count":patient_booked.count(),
+                        "consultaion_count":today_patient_consultaion.count(),
                         "data":None,
                         "message":"No patients yet."},
                         status=status.HTTP_200_OK)
@@ -1183,10 +1309,10 @@ class GetInterAction(generics.CreateAPIView):
                     serializer =ser.serialize('json', interaction)
                     return Response({"status":True,"data":serializer,"message":"Success"},status=status.HTTP_200_OK)
                 else:
-                    return Response({"status":False,"data":None,"message":"No interactions"},status=status.HTTP_200_OK)
+                    return Response({"status":False,"data":None,"message":"No interactions"},status=status.HTTP_404_NOT_FOUND)
                     
             except StandardDrugs.DoesNotExist:
-                return Response({"status":False,"data":None,"message":"No Drugs with this name"},status=status.HTTP_200_OK)
+                return Response({"status":False,"data":None,"message":"No Drugs with this name"},status=status.HTTP_404_NOT_FOUND)
         else:
                 return Response({"status":False,"data":None,"message":"Please Enter new and base"},status=status.HTTP_400_BAD_REQUEST)
             
@@ -1241,7 +1367,62 @@ class ChronicDiseaseView(generics.ListAPIView):
         chronic_disease= ChronicDiseases.objects.all()
         serializer =self.serializer_class(chronic_disease, many=True)
         return Response({"status":True,"data":serializer.data,"message":"Sucssess"},status=status.HTTP_200_OK)
+    
+class StandardScreensView(generics.ListAPIView):
+    authentication_classes=[TokenAuthentication,]
+    permission_classes= [IsDoctor,]
+    serializer_class=StandardScreensSerializer
+    def get(self, request):
+        standard_screens =StandardScreens.objects.all()
+        serializer= self.serializer_class(standard_screens, many=True)
+        return Response({"status":True,"data":serializer.data,"message":"Success"},status=status.HTTP_200_OK)
 
+
+class StandardTestView(generics.ListAPIView):
+    authentication_classes=[TokenAuthentication,]
+    permission_classes= [IsDoctor,]
+    serializer_class=StandardMedicalAnalysisSerializer
+    def get(self, request):
+        standard_tests =StandardMedicalAnalysis.objects.all()
+        serializer= self.serializer_class(standard_tests, many=True)
+        return Response({"status":True,"data":serializer.data,"message":"Success"},status=status.HTTP_200_OK)
+    
+class CommitmentView(generics.ListCreateAPIView):
+    authentication_classes=[TokenAuthentication,]
+    permission_classes= [IsPatient,]
+    # serializer_class =SetDrugSerializer
+    def post(self, request, id):
+        obj = PatientCommitment.objects.get(id=id, patient=request.user.id)
+        allowed_time = obj.date + timedelta(days=1)
+        current_time = timezone.now()
+
+        if current_time > allowed_time:
+            return Response({"status": False, "data": None, "message": "Failed"}, status=status.HTTP_400_BAD_REQUEST)
+        data = request.data['status']
+        if data == True:
+            obj.status = data
+            obj.save()
+            prescription = Prescription.objects.get(drug__patientcommitment__id=id)
+            drugs= Drug.objects.filter(prescription=prescription)
+            if drugs.count() >0:
+                _sum=0
+                for drug in drugs:
+                    _sum = _sum+drug.commitmentRatio()
+                prescription.Commitment_ratio=_sum / drugs.count()
+                prescription.save()
+            return Response({"satus":True,"data":None,"message":"Success"},status=status.HTTP_200_OK)
+        elif data == False:
+            obj.status = data
+            obj.save()
+            prescription = Prescription.objects.get(drug__patientcommitment__id=id)
+            drugs= Drug.objects.filter(prescription=prescription)
+            if drugs.count() >0:
+                _sum=0
+                for drug in drugs:
+                    _sum = _sum+drug.commitmentRatio()
+                prescription.Commitment_ratio=_sum / drugs.count()
+                prescription.save()
+            return Response({"satus":False,"data":None,"message":"Success"},status=status.HTTP_200_OK)
 # api_view(['GET','POST'])
 # def makePrescription(request):
 #     if request.method == 'GET':

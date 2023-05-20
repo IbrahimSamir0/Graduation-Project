@@ -47,17 +47,14 @@ def image_upload(instance, filename):
 
 
 class Prescription(models.Model):
-            
-    # id = models.UUIDField(primary_key=True,unique=True,editable=False)
     patient= models.ForeignKey('accounts.Patient', related_name='patient_id', on_delete=models.CASCADE)
     doctor = models.ForeignKey('accounts.Doctor', related_name='doctor_id', on_delete=models.PROTECT)
     day_created = models.DateField(default=datetime.now)
     next_consultation = models.DateField(_("next consultation"),validators=[future_date_validator])
     clinical =models.ForeignKey('Clinical', related_name='Clinical', on_delete=models.CASCADE)
     cancelation_date= models.DateField(null = True)
-    # is_patient_cancels= models.BooleanField(default=False)
-    # drug =models.ForeignKey("Drug", on_delete=models.CASCADE)
-    # Screen =models.ForeignKey('Screen', on_delete=models.CASCADE)
+    observations = models.TextField(null=True, blank=True)
+    Commitment_ratio=models.SmallIntegerField(default=0,validators=[MinValueValidator(0),MaxValueValidator(100)])
     
     def isCanceled(self):
         today = date.today()
@@ -121,12 +118,32 @@ class Drug (models.Model):
     dose_per_hour = models.FloatField(_("dose"))
     drugType=models.CharField(("Drug Type"),max_length=100 ,null=True, blank=True)
     name_if_doesnt_exist= models.CharField(max_length=100,null=True, blank=True)
+    commitment = models.ManyToManyField(Patient, through='PatientCommitment')
+    Commitment_ratio=models.SmallIntegerField(default=0,validators=[MinValueValidator(0),MaxValueValidator(100)])
     
     def __str__(self):
         if self.drug is not None:
             return self.drug.name
         else:
             return self.name_if_doesnt_exist
+        
+    def commitmentRatio(self):
+        positive= PatientCommitment.objects.filter(drug=self ,status__isnull=False,status=True).count()
+        negative= PatientCommitment.objects.filter(drug=self ,status__isnull=False,status=False).count()
+        _sum =positive + negative
+        if _sum ==0:
+            self.Commitment_ratio= 0
+            self.save()
+            return 0
+        self.Commitment_ratio=int(positive/_sum*100)
+        self.save()
+        return int(positive/_sum*100)
+        
+class PatientCommitment(models.Model):
+    patient= models.ForeignKey(Patient,  on_delete=models.CASCADE)
+    drug= models.ForeignKey(Drug,  on_delete=models.CASCADE)
+    date = models.DateTimeField()
+    status=models.BooleanField(null=True)
 
 
 class Clinical (models.Model):
@@ -145,7 +162,7 @@ class Clinical (models.Model):
 
 
 class StandardScreens(models.Model):
-    name = models.CharField(_("screen name"), max_length=100)
+    name = models.CharField(_("screen name"), max_length=50)
     description = models.TextField(_("description"))
     
     def __str__(self):
@@ -154,23 +171,18 @@ class StandardScreens(models.Model):
     
 class Screen (models.Model):
     screen = models.ForeignKey('StandardScreens', related_name='StandardScreens', on_delete=models.PROTECT)
-    image = models.TextField(null=True)
+    image = models.TextField(null=True, blank=True)
     prescription = models.ForeignKey("Prescription", on_delete=models.CASCADE)
     patient =models.ForeignKey(Patient, on_delete=models.CASCADE)
     deadline= models.DateField()
+    observations = models.TextField(null=True, blank=True)
     # is_done = models.BooleanField(default=False)  
     
     def __str__(self):
         return self.screen.name
-class TestScreen(models.Model):
-    image = models.BinaryField(blank=True)
-    new = models.ImageField( upload_to=image_upload,null=True,blank=True)
-    file= models.FileField(upload_to=image_upload,blank=True)
-    file_path= models.FilePathField(blank=True)
-    text = models.TextField()
 
 class StandardMedicalAnalysis(models.Model):
-    name = models.CharField(_("Medical Analysis"), max_length=100)
+    name = models.CharField(_("Medical Analysis"), max_length=50)
     description = models.TextField(_("description"))
     
     def __str__(self):
@@ -178,11 +190,11 @@ class StandardMedicalAnalysis(models.Model):
 
 class MedicalAnalysis(models.Model):
     standard_medical_analysis = models.ForeignKey(StandardMedicalAnalysis,  on_delete=models.CASCADE)
-    image = models.TextField(null= True)
+    image = models.TextField(null= True,blank= True)
     prescription = models.ForeignKey("Prescription", on_delete=models.CASCADE)
     patient =models.ForeignKey(Patient, on_delete=models.CASCADE)
     deadline= models.DateField()
-    is_done = models.BooleanField(default=False)
+    observations = models.TextField(null=True, blank=True)
     
     def __str__(self):
         return self.standard_medical_analysis.name
@@ -247,7 +259,7 @@ class PatientBooking(models.Model):
     
 
 class ChronicDiseases(models.Model):
-    disease = models.CharField(max_length=500)
+    disease = models.CharField(max_length=50)
     
     def __str__(self):
         return self.disease

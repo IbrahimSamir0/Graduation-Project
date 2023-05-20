@@ -5,8 +5,13 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.http import urlsafe_base64_decode
 # from django.contrib.auth import authenticate, get_user_model
 # from django.utils.translation import gettext_lazy as _
+import random
 
-
+class CitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model= City
+        fields= '__all__' 
+        
 class Type(serializers.ModelSerializer):
     class Meta:
         model= UserType
@@ -15,6 +20,7 @@ class Type(serializers.ModelSerializer):
 
 class DoctorSerializer(serializers.ModelSerializer):
     # user_type = Type()
+    city =CitySerializer()
     class Meta:
         model = Doctor
         fields = ['id','username','email','first_name','last_name','phone','avatar','bio','about','city','price','numOfRating','avgRating','ratingDetails','gender','get_age']
@@ -25,6 +31,7 @@ class EditDoctorProfileSerializer(serializers.ModelSerializer):
         fields=['username','first_name','last_name','city','price','avatar','bio','about','phone']
     
 class PatientSerializer(serializers.ModelSerializer):
+    city =CitySerializer()
     class Meta:
         model = Patient
         fields = ['id','email','username','first_name','last_name','gender','get_age','phone','avatar','city']
@@ -158,9 +165,6 @@ class ChangePasswordSerializer(serializers.Serializer):
     confirm_new_password =serializers.CharField(required =True)
     
 class EmailSerializer(serializers.Serializer):
-    """
-    Reset Password Email Request Serializer.
-    """
 
     email = serializers.EmailField()
 
@@ -205,3 +209,4 @@ class ResetPasswordSerializer(serializers.Serializer):
 class ChangePasswordAfterForgetSerializer(serializers.Serializer):
     new_password = serializers.CharField(required=True)
     confirm_new_password =serializers.CharField(required =True)
+    

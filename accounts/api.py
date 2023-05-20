@@ -465,24 +465,24 @@ class PasswordReset(generics.GenericAPIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         email = serializer.data["email"]
-        user = User.objects.filter(email=email).first()
-        if user:
+        try:
+            user = User.objects.get(email=email)
             encoded_pk = urlsafe_base64_encode(force_bytes(user.pk))
             token = PasswordResetTokenGenerator().make_token(user)
             # redirect("api/password_reset/",)
             # reset_url = reverse("accounts:password_reset",kwargs={"encoded_pk": encoded_pk, "token": token},)
             # reset_link = f"http://127.0.0.1:8000{reset_url}"
-            sendForgerPasswordMail(email,token,encoded_pk)
+            temp=sendForgerPasswordMail(email,token,encoded_pk)
             # send the rest_link as mail to the user.
 
             return response.Response(
                 {
                     "message": 
-                    f"Your will found password reset link in your email"
+                    f"You will found password reset link in your email.<br>Hint: Check spam messages"
                 },
                 status=status.HTTP_200_OK,
             )
-        else:
+        except User.DoesNotExist:
             return response.Response(
                 {"message": "User doesn't exists"},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -557,3 +557,14 @@ class ResetPasswordAPI(generics.GenericAPIView):
 #             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 #         except User.DoesNotExist :
 #             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class ClinicalVeiw(generics.ListAPIView):
+    # authentication_classes = [TokenAuthentication,]
+    permission_classes=[AllowAny,]
+    serializer_class = CitySerializer
+    def get(self,request):
+        cities = City.objects.all()
+        serializer = self.serializer_class(cities, many=True)
+        return Response ({"status":True,
+                          "data":serializer.data,
+                          "message":"Success"},
+                         status=status.HTTP_200_OK)

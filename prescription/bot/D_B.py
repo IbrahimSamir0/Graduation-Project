@@ -51,16 +51,14 @@ class DB:
             
         return res
     
-    def insert(self,table,fields,values_s,data):
-        SQL= (f'INSERT INTO {table} '
-              f'({fields})'
-              f'VALUES ({values_s})')
-        for i in data:
-            try:
-                self.cursor.execute(SQL,(i))
-            except connector.Error as e:
+    def insert(self, table_name, column_names, values):
+        query = "INSERT INTO {} ({}) VALUES ({});".format(table_name, column_names, ",".join(["%s"]*len(values)))
+        try:
+            self.cursor.execute(query, values)
+            self.conn.commit()
+        except connector.Error as e:
                 print(e)
-        self.conn.commit()
+        return self.cursor.lastrowid
     
     
     
@@ -68,16 +66,13 @@ class DB:
         # if not where:
         SQL= (row)%data
         
-        print('HOW'*50)
-        print(SQL)
         try:
             self.cursor.execute(SQL)
+            self.conn.commit()
         except connector.Error as e:
             print(e)
         
         
-
-        self.conn.commit()
         
     
 

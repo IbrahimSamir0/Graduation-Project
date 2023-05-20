@@ -15,11 +15,16 @@ from rest_framework.authtoken.models import Token
 
 def sendForgerPasswordMail(email, token, encoded_pk):
     subject= 'Your forget password link'
-    message =f'Hi, click on the link to reset your password http://127.0.0.1:8000/accounts/api/password_reset/{encoded_pk}/{token}/'
+    message =f'Hi, click on the link to reset your password http://localhost:8081/newpasswordpg/{encoded_pk}/{token}/'
     from_email = settings.EMAIL_HOST_USER
     recipient_list=[email]
-    send_mail(subject, message, from_email, recipient_list)
-    return True
+    try:
+        send_mail(subject=subject,message= message, from_email=from_email, recipient_list=recipient_list,fail_silently=True)
+        # email = EmailMessage(subject, message, to=[email])
+        # if email.send():
+        return True
+    except :
+        return False
 # accounts:password_reset
 
 

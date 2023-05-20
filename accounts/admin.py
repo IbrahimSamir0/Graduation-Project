@@ -6,7 +6,7 @@ from django.contrib.auth.models import Group
 # admin.site.register(User)
 admin.site.register(Admin)
 admin.site.register(PatientDiseases)
-# admin.site.register(Patient)
+admin.site.register(City)
 # admin.site.register(Doctor)
 
 # admin.site.unregister(Group)

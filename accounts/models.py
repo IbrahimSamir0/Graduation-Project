@@ -42,14 +42,21 @@ def phoneValidate(value):
                         _('%(value)s is length is less than 11 numbers.'),
                         params={'value': value},
                     )
+            
+def priceValidator(value):
+    if value < 0 :
+        raise ValidationError(
+                        _('Price cannot be a negative number.'),
+                        params={'value': value},
+                    )
         
-def doctorValidate(value):
-    pass
+# def doctorValidate(value):
+#     pass
         
 
-def image_upload(instance, filename):
-    imagename , extension = filename.split(".")
-    return "avatar/%s.%s"%(instance.id,extension)
+# def image_upload(instance, filename):
+#     imagename , extension = filename.split(".")
+#     return "avatar/%s.%s"%(instance.id,extension)
 
 
 
@@ -83,20 +90,41 @@ CITIES=(
     ('Gharbia','Gharbia'),
 )
 
+
+# INSERT INTO `accounts_city` (`id`, `name`) VALUES ('2', 'Alexandria');
+# INSERT INTO `accounts_city` (`id`, `name`) VALUES ('3', 'Giza');
+# INSERT INTO `accounts_city` (`id`, `name`) VALUES ('4', 'Shubra El Kheima');
+# INSERT INTO `accounts_city` (`id`, `name`) VALUES ('5', 'Port Said');
+# INSERT INTO `accounts_city` (`id`, `name`) VALUES ('6', 'Suez');
+# INSERT INTO `accounts_city` (`id`, `name`) VALUES ('7', 'El Mahalla El Kubra');
+# INSERT INTO `accounts_city` (`id`, `name`) VALUES ('8', 'Luxor');
+# INSERT INTO `accounts_city` (`id`, `name`) VALUES ('9', 'Mansoura');
+# INSERT INTO `accounts_city` (`id`, `name`) VALUES ('10', 'Tanta');
+# INSERT INTO `accounts_city` (`id`, `name`) VALUES ('11', 'Asyut');
+# INSERT INTO `accounts_city` (`id`, `name`) VALUES ('12', 'Ismailia');
+# INSERT INTO `accounts_city` (`id`, `name`) VALUES ('13', 'Faiyum');
+# INSERT INTO `accounts_city` (`id`, `name`) VALUES ('14', 'Zagazig');
+# INSERT INTO `accounts_city` (`id`, `name`) VALUES ('15', 'Damietta');
+# INSERT INTO `accounts_city` (`id`, `name`) VALUES ('16', 'Aswan');
+# INSERT INTO `accounts_city` (`id`, `name`) VALUES ('17', 'Minya');
+# INSERT INTO `accounts_city` (`id`, `name`) VALUES ('18', 'Damanhur');
+# INSERT INTO `accounts_city` (`id`, `name`) VALUES ('19', 'Beni Suef');
+# INSERT INTO `accounts_city` (`id`, `name`) VALUES ('20', 'Hurghada');
+# INSERT INTO `accounts_city` (`id`, `name`) VALUES ('21', 'Qena');
+# INSERT INTO `accounts_city` (`id`, `name`) VALUES ('22', 'Sohag');
+# INSERT INTO `accounts_city` (`id`, `name`) VALUES ('23', 'Shibin El Kom');
+# INSERT INTO `accounts_city` (`id`, `name`) VALUES ('24', 'Banha');
+# INSERT INTO `accounts_city` (`id`, `name`) VALUES ('25', 'Arish');
+# INSERT INTO `accounts_city` (`id`, `name`) VALUES ('26', 'Qalyubia');
+# INSERT INTO `accounts_city` (`id`, `name`) VALUES ('27', 'Gharbia');
     
 class CustomUserManger(BaseUserManager):   
     
     def create_user(self, email, password, **extra_fields): 
-        # if typ == 1:   
-        #     extra_fields.setdefault('typ_id',1)
-        # elif typ ==2:
-        #     extra_fields.setdefault('typ_id',2)
-            
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save()
-        # Token.objects.create(user)
         Token.objects.create(user = user)   
         return user
     
@@ -114,8 +142,11 @@ class CustomUserManger(BaseUserManager):
         return self.create_user(email=email, password=password, **extra_fields)
     
 
+class City(models.Model):
+    name= models.CharField(_("city_name"), max_length=50)
+
 class User(AbstractBaseUser,PermissionsMixin):
-    username = models.CharField(unique=True, max_length=30,null=True)
+    username = models.CharField(unique=True, max_length=50)
     email = models.EmailField(unique=True)
     is_superuser=models.BooleanField(default=False)
     is_active=models.BooleanField(default=True)
@@ -160,10 +191,9 @@ class UserInheritance(models.Model):
         )
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
-    date_birth = models.DateField(validators= [future_date_validator])
     phone = models.CharField(max_length=11,validators=([phoneValidate]))
-    city = models.CharField(max_length=30, choices=CITIES)
-    avatar = models.TextField(blank= True)
+    # city = models.CharField(max_length=30, choices=CITIES)
+    avatar = models.TextField(blank= True,null=True)
     gender = models.CharField(choices=GENDER, max_length=1)
     
         
@@ -188,7 +218,9 @@ class Admin(User,UserInheritance):
 
     
 class Patient (User,UserInheritance):
-    doctor_id = models.ForeignKey("Doctor", verbose_name=("Doctor_id"), on_delete=models.CASCADE,blank=True, null=True)
+    date_birth = models.DateField(validators= [future_date_validator])
+    city= models.ForeignKey(City, on_delete=models.PROTECT)
+    doctor_id = models.ForeignKey("Doctor", verbose_name=("Doctor_id"), on_delete=models.PROTECT,blank=True, null=True)
     disease = models.ManyToManyField("prescription.ChronicDiseases", through='PatientDiseases')
     # booking = models.ForeignKey('prescription.Booking',on_delete=models.PROTECT,blank=True, null=True)
     # def get_age ():
@@ -216,8 +248,10 @@ class PatientDiseases(models.Model):
 
 
 class Doctor(User,UserInheritance):
+    date_birth = models.DateField(validators= [future_date_validator])
+    city= models.ForeignKey(City, on_delete=models.PROTECT)
     # doctor_number = models.CharField(max_length=10,unique=True,validators=[doctorValidate])
-    price = models.PositiveIntegerField(default=0)
+    price = models.PositiveIntegerField(default=0,validators=([priceValidator]))
     bio = models.CharField(max_length=100,null=True,blank=True)
     about = models.TextField(null=True,blank=True)
     # clinical = models.ManyToManyField("prescription.Clinical", verbose_name=_("Clinical"))
@@ -273,18 +307,18 @@ class Rating (models.Model):
     
     
 
-@receiver(reset_password_token_created)
-def password_reset_token_created(sender, instance, reset_password_token, *args, **kwargs):
+# @receiver(reset_password_token_created)
+# def password_reset_token_created(sender, instance, reset_password_token, *args, **kwargs):
 
-    email_plaintext_message = "{}?token={}".format(reverse('password_reset:reset-password-request'), reset_password_token.key)
+#     email_plaintext_message = "{}?token={}".format(reverse('password_reset:reset-password-request'), reset_password_token.key)
 
-    send_mail(
-        # title:
-        "Password Reset for {title}".format(title="Some website title"),
-        # message:
-        email_plaintext_message,
-        # from:
-        "ebrahim.ssamer77@gmail.com",
-        # to:
-        [reset_password_token.user.email]
-    )
+#     send_mail(
+#         # title:
+#         "Password Reset for {title}".format(title="Some website title"),
+#         # message:
+#         email_plaintext_message,
+#         # from:
+#         "ebrahim.ssamer77@gmail.com",
+#         # to:
+#         [reset_password_token.user.email]
+#     )

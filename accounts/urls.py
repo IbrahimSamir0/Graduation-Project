@@ -30,6 +30,7 @@ urlpatterns = [
     # path('oauth/', include('social_django.urls', namespace='social')),  # <-- here
        
         # #API
+    path('api/cities/',api.ClinicalVeiw.as_view()),
     path('api/patient_profile/register/',api.RegisterAsPatientAPI.as_view()),
     path('api/patient_profile/edit/',api.EditPatientProfile.as_view()),
     path('api/patient_my_profile/',api.MyProfilePatient.as_view(), name='MyProfilePatient'),
@@ -37,6 +38,8 @@ urlpatterns = [
     path('api/my_patient_profile/<int:id>/',api.FBV_pk_patient, name='PatientprofileDetailAPI'),
     
     path('api/my_patient_profile/<int:patient_id>/make_prescription/',views.SetPrescription.as_view(), name='PatientprofileDetailAPI'),
+    path('api/my_patient_profile/<int:id>/get_screens/',views.GetPatientScreens.as_view(), name='GetPatientScreens'),
+    path('api/my_patient_profile/<int:id>/get_tests/',views.GetPatientTests.as_view(), name='GetPatientTests'),
     
     # path('api/get_doctor_clinicals/',views.GetCurentClinicalForPatient.as_view(),name='GetCurentClinicalForPatient'),
     

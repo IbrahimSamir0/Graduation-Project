@@ -1,36 +1,49 @@
-from selenium.webdriver.support import expected_conditions as EC
+# from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from .D_B import DB
-
-from .parent import PARENT
+from parent import PARENT
+# from selenium.webdriver.support.ui import WebDriverWait
 import time
 
+class INTERACTION():
+    def __init__(self,parent = PARENT()):
+        self.parent = parent
+        self.driver = self.parent.driver
+        
+        self._ingredient = None
+        self.major_interactions = []
+        self.minor_interactions = []
+        self.moderate_interactions =[]
 
+    @property
+    def ingredient(self):
+        return self._ingredient
 
-class INTERACTION(PARENT):
-
-    # def __init__(self):
-    #     self.con= DB()
-
-    # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    # functions for get drugs interactoin
-    # ++++++++++++++++++++++++++++++++++++
+    @ingredient.setter
+    def ingredient(self, val):
+        if val :
+            val = val.lower().replace('-',' ')
+        self._ingredient = val
 
     def click_interaction(self):
         try:
-            link = self.wait.until(EC.element_to_be_clickable(
-                (By.XPATH, "//*[@id='content']/div[@class='contentBox']/div[@class='ddc-media-list ddc-search-results']/div[@class='ddc-media']/div[@class='ddc-media-content ddc-search-result ddc-search-result-with-secondary']/ul/li[3]/a")))
+            link = self.driver.find_element(By.XPATH, '//*[@class="ddc-list-column-2"]/li[3]/a')
+            url = str(link.get_attribute("href"))
+            url = url.split(',')[0]
+            self.ingredient = url.split('/')[-1]
+            print(self.ingredient)
             link.click()
         except:
-            return 'Cant git this drug!'
-
-    def get_interaction_drugs(self):
-        link = self.wait.until(EC.element_to_be_clickable(
-            (By.XPATH, '//*[@id="content"]/div[2]/ul[1]/li[1]/a')))
-        link.click()
+            return 'Can\'t get this drug!'
+    # click_on_interaction_number______________________________________________________________________________________________________________________________________
+    def click_on_interaction_number(self):
+        try:
+            self.driver.find_element(By.XPATH, '//*[@id="content"]/div[2]/ul[1]/li[1]/a').click()
+        except Exception as error:
+            print(error)
+            
 
     def getIntSource(self, clas):
-        return self.find_elements(By.XPATH, f"//h3[text()[contains(.,'disease')]]/preceding::ul/li[@class='{clas}']/a")[1:]
+        return self.driver.find_elements(By.XPATH, f"//h3[text()[contains(.,'disease')]]/preceding::ul/li[@class='{clas}']/a")[1:]
 
     def getIntText(self, clas):
         text = []
@@ -44,30 +57,32 @@ class INTERACTION(PARENT):
             links.append(i.get_attribute("href"))
         return links
 
+
     def validDescription(self, txt):
         if txt[:8] == 'Consumer' or txt[:6] == 'Switch' or txt[:11] == 'Information':
             return False
         return True
-    
-    
+
     def get_header(self):
-        header = self.find_elements(
+        header = self.driver.find_elements(
             By.XPATH, f"//div[@class='interactions-reference']/div/h3")
         return header
-    
+
     def get_interaction(self):
-        p = self.find_elements(
+        p = self.driver.find_elements(
             By.XPATH, f"//div[@class='interactions-reference']/p")
         return p
-    
-    def validate_header(self,header,ingredient):
-        txt= header.strip().split(' ')
-        if ingredient not in txt:
+
+    def validate_header(self,header):
+        txt= header.strip().lower().replace('-',' ')
+        if self.ingredient not in txt:
             return [False]
         else:
-            txt = ' '.join(txt)
-            txt= txt.replace(ingredient,'').strip()
+            # txt = ' '.join(txt)
+            txt= txt.replace(self.ingredient,'').strip()
+            txt = txt.replace('\'' , ' i')
             return [True,txt]
+
 
     def validate_interaction(self,interactions,parent):
         ans=''
@@ -77,22 +92,25 @@ class INTERACTION(PARENT):
                 if interaction[:8] != 'Consumer' or interaction[:6] != 'Switch' or interaction[:11] != 'Information':
                     ans+='      '+interaction
         return ans
-    
-    def prepare_data(self,ingredient):
+
+    def prepare_data(self):
         header = self.get_header()
+        # print(header)
         interactions = self.get_interaction()
-        res= {}
+        # return [header[0].text , interactions[0].text]
+        res= []
         for h,i in zip(header,interactions):
-            res_h= self.validate_header(h.text,ingredient)
+            res_h= self.validate_header(h.text)
             if not res_h[0]:
                 continue
             second_ingredient= res_h[1]
             description= self.validate_interaction(interactions,h.parent)
-            res[second_ingredient]=description.strip()
+            res.append((second_ingredient , description.strip()))
         return res
 
+
     def getInteractionDescription(self):
-        p = self.find_elements(
+        p = self.driver.find_elements(
             By.XPATH, f"//div[@class='interactions-reference']/p")
         res=[]
         
@@ -112,9 +130,10 @@ class INTERACTION(PARENT):
             res.append(blocks)
         return res
 
+
     def getInteractWith(self, drug):
         #                                     //h3[contains(text(),'apremilast')]
-        name = self.find_elements(
+        name = self.driver.find_elements(
             By.XPATH, f"//div[@class='interactions-reference']/div/h3")
         
         res = {}
@@ -138,101 +157,91 @@ class INTERACTION(PARENT):
                 counter+=1
         return res
 
+
     def active_ingredient(self,drug_name):
-        first= self.find_elements(By.XPATH, '//*[@id="content"]/div[@class="contentBox"]/ul[1]/li')
+        first= self.driver.find_elements(By.XPATH, '//*[@id="content"]/div[@class="contentBox"]/ul[1]/li')
         for i in first:
             res= i.text
             spl= res.split(' ')
             if spl[0].lower()==drug_name.lower():
                 ingredient= spl[1]
                 return ingredient[1:-1].lower()
-    
-    
+
+
     def get_name_of_active_ingredient(self,drug_name):
         links_2 = self.getIntLinks('int_2')
-        self.get(links_2[0])
+        self.driver.get(links_2[0])
         res= self.active_ingredient(drug_name)
         self.back()
         return res
 
 
-    def run_user_add_active_ingredient(self,user_active_ingredients):
-        # active_ingredient=set(user_active_ingredients)
-        active = user_active_ingredients[0]
-        data=[]
-        db = DB()
+    def run_user_add_active_ingredient(self,active):
         status=None
-        db.cursor.execute(f"SELECT if_interaction_exist FROM prescription_active_ingredient WHERE name = '{active}'")
-        print('zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz')
-        status = [i for i in db.cursor.fetchall()]
-        print('cow'*200)
-        print(status)
-        print('cow'*200)
-        if not status:
-            for i in user_active_ingredients:
-                data.append((self.hashing(i),i,0))
-            self.con.insert('prescription_active_ingredient','id,name,if_interaction_exist ','%s,%s,%s',data)
-        # elif status == 0 :
-        #     self.con.raw(""" UPDATE `prescription_active_ingredient`
-        #             SET `if_interaction_exist` = '%s'
-        #             WHERE name = '%s'; """
-        #         ,(1,active))
-        
-        
-        
-        # active_ingredient=set(user_active_ingredients)
-        # data=[]
-        # for i in active_ingredient:
-        #     data.append((self.hashing(i),i,1))
-        # self.con.insert('prescription_active_ingredient','id,name,if_interaction_exist ','%s,%s,%s',data)
+        self.con.cursor.execute(f"SELECT if_interaction_exist FROM prescription_active_ingredient WHERE name = '{active}'")
+        status = self.con.cursor.fetchone()
+        if status == None:
+            self.con.insert('prescription_active_ingredient','id,name,if_interaction_exist',(self.hashing(active),active,0))
 
-    
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     #----------------------------------------------add ingredients description-----------------------------------------------------[****************LAST WORK*******************]
-    def run_go_to_description(self,ingredient_name):
-        self.closePopUp()
-        self.search(ingredient_name)
-        self.closeSmallPopUp()
-        self.click_interaction()
-        self.closeSmallPopUp()
-        self.get_interaction_drugs()
-        self.closeSmallPopUp()
+    # def run_go_to_description(self,drug):
+    #     self.search(drug)
+    #     self.click_interaction()
+    #     self.click_on_interaction_number()
         
     
-    def run_add_drug_interaction_to_db(self,ingredient):
-        self.closeSmallPopUp()
-        self.find_element(By.XPATH, '//*[@id="content"]/div[2]/ul[1]/li[1]/a').click()
+    def scrapInteractions(self):
         links_3 = self.getIntLinks('int_3')
         links_2 = self.getIntLinks('int_2')
         links_1 = self.getIntLinks('int_1')
+        ln = (len(links_1) + len(links_2) + len(links_3))
+        c=0
     # Major
-        for link in links_3[1:]:
-            self.get(link)
-            interact_with = self.prepare_data(ingredient)
-            for name,description in interact_with.items():
-                first= [(self.hashing(name),name,0)]
-                self.con.insert('prescription_active_ingredient','id,name,if_interaction_exist','%s,%s,%s',first)
-                second= [(description,self.hashing(ingredient),self.hashing(name), 2)]
-                self.con.insert('prescription_ingredient_interaction','description,first_id,second_id,status_id','%s,%s,%s,%s',second)
+        flag = 0
+        for link in links_3:
+            try:
+                c += 1
+                print(f'{c} from {ln}')
+                self.driver.execute_script(f"window.location.href = '{link}';")
+                self.major_interactions +=self.prepare_data()
+            except Exception as error:
+                print(error)
+
     # Moderate
         for link in links_2:
-            self.get(link)
-            interact_with = self.prepare_data(ingredient)
-            for name,description in interact_with.items():
-                first= [(self.hashing(name),name,0)]
-                self.con.insert('prescription_active_ingredient','id,name,if_interaction_exist','%s,%s,%s',first)
-                second= [(description,self.hashing(ingredient),self.hashing(name), 1)]
-                self.con.insert('prescription_ingredient_interaction','description,first_id,second_id,status_id','%s,%s,%s,%s',second)
+            try:
+                self.driver.execute_script(f"window.location.href = '{link}';")
+                self.moderate_interactions+=self.prepare_data()
+                c+=1
+                print(f'{c} from {ln}')
+            except Exception as error:
+                print(error)
+
     # Minor
         for link in links_1:
-            self.get(link)
-            interact_with = self.prepare_data(ingredient)
-            for name,description in interact_with.items():
-                first= [(self.hashing(name),name,0)]
-                self.con.insert('prescription_active_ingredient','id,name,if_interaction_exist','%s,%s,%s',first)
-                second= [(description,self.hashing(ingredient),self.hashing(name), 0)]
-                self.con.insert('prescription_ingredient_interaction','description,first_id,second_id,status_id','%s,%s,%s,%s',second)
+            try:
+                self.driver.execute_script(f"window.location.href = '{link}';")
+                self.minor_interactions+=self.prepare_data()
+                c+=1
+                print(f'{c} from {ln}')
+            except Exception as error:
+                print(error)
 
     #------------------------------------------------------------------------------------------------------------------
 
@@ -247,7 +256,7 @@ class INTERACTION(PARENT):
 # interaction.closeSmallPopUp()
 # interaction.click_interaction()
 # interaction.closeSmallPopUp()
-# interaction.get_interaction_drugs()
+# interaction.click_on_interaction_number()
 # links=interaction.getIntLinks('int_2')
 # interaction.get(links[0])
 # interaction.closeSmallPopUp()

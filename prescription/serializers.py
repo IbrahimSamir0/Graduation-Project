@@ -9,6 +9,7 @@ from rest_framework.fields import CurrentUserDefault
 from django.utils import timezone
 import datetime
 from accounts.models import PatientDiseases, Patient
+from accounts.serializers import CitySerializer
 
 # class Clinicals(serializers.Serializer):
 #     clinicall = serializers.ChoiceField(choices=[Clinical.objects.get(doctor = 9)])    
@@ -73,7 +74,7 @@ class SetClinicalForPrescriptionSerializer(serializers.ModelSerializer):
 class GetPrescriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Prescription
-        fields = ['id','day_created','next_consultation','cancelation_date']
+        fields = ['id','day_created','next_consultation','cancelation_date','Commitment_ratio']
         
 class GetDoctorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -103,12 +104,12 @@ class SetDrugSerializer(serializers.ModelSerializer):
     drug= GetAllStandardDrugsNameSerializer()
     class Meta:
         model = Drug
-        fields = ['drug','end_in','dose_per_hour','name_if_doesnt_exist','consentration']
+        fields = ['drug','end_in','dose_per_hour','name_if_doesnt_exist','consentration','Commitment_ratio']
 
 class StandardScreensSerializer(serializers.ModelSerializer):
     class Meta:
         model = StandardScreens
-        fields = ['name','description']
+        fields = ['id','name','description']
 
 class GetScreenSerialzer(serializers.ModelSerializer):
     screen=StandardScreensSerializer()
@@ -129,13 +130,23 @@ class SetMedicalAnalysisSerializer(serializers.ModelSerializer):
 class StandardMedicalAnalysisSerializer(serializers.ModelSerializer):
     class Meta:
         model= StandardMedicalAnalysis
-        fields =['name','description']
+        fields =['id','name','description']
         
 class GetMedicalAnalysisSerializer(serializers.ModelSerializer):
     standard_medical_analysis= StandardMedicalAnalysisSerializer()
     class Meta:
         model = MedicalAnalysis
-        fields =['standard_medical_analysis','deadline','image']
+        fields =['id','standard_medical_analysis','deadline','image']
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         
 class SetPrescriptionSerializer(serializers.ModelSerializer):
     drugs= SetDrugNameSerializer(many = True)
@@ -349,10 +360,10 @@ class PostScreenSerializer(serializers.ModelSerializer):
         #         patinet= pat,
         #         image= validated_data['image']
         #     )
-class GetScreenSerializer(serializers.ModelSerializer):
-    class Meta :
-        model = TestScreen
-        fields = ['text']
+class PostMedicalaAnalysisSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MedicalAnalysis
+        fields = ['image']
 
 class GetOldPrescriptions(serializers.Serializer):
     id=serializers.IntegerField()
@@ -368,6 +379,7 @@ class GetCurentClinicalForPatientSerializer(serializers.ModelSerializer):
         
         
 class GetDoctorPAtientSerializer(serializers.ModelSerializer):
+    city =CitySerializer()
     class Meta:
         model = Patient
         fields = ['id','first_name','last_name','phone','avatar','city','get_age']
