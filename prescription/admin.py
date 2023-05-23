@@ -13,4 +13,5 @@ admin.site.register(ChronicDiseases)
 admin.site.register(PatientBooking)
 admin.site.register(PatientCommitment)
 admin.site.register(active_Ingredient)
+admin.site.register(SerialFilm)
 # Register your models here

@@ -43,11 +43,13 @@ urlpatterns = [
     path('get_all_standard_drugs_name_filter/',views.GetAllStandardDrugsNameFilter.as_view(),name='GetAllStandardDrugsName'),
     path('get_my_screens/',views.GetMyScreens.as_view(),name='GetMyOldPrescriptions'),
     path('update_my_screen/<int:id>/',views.AddOrUpdateScreenForPatient.as_view(),name='AddOrUpdateScreenForPatient'),
-    path('get_my_screens/<int:id>/',views.GetMySpecificScreens.as_view(),name='GetMySpecificOldScreens'),
+    path('get_my_serial_films/<int:id>/',views.GetSerialFilmView.as_view(),name='GetSerialFilmView'),
+    
+    # path('get_my_screens/<int:id>/',views.GetMySpecificScreens.as_view(),name='GetMySpecificOldScreens'),
     # path('get_my_active_screeen/',views.GetMyActiveScreen.as_view(),name='GetMyActivePrescription'),
     path('get_my_tests/',views.GetMyMedicalAnlaysis.as_view(),name='GetMyMedicalAnlaysis'),
     path('update_my_test/<int:id>/',views.AddOrUpdateMedicalAnalysisForPatient.as_view(),name='AddOrUpdateMedicalAnalysisForPatient'),
-    path('get_my_test/<int:id>/',views.GetMySpecificScreens.as_view(),name='GetMySpecificOldScreens'),
+    # path('get_my_test/<int:id>/',views.GetMySpecificScreens.as_view(),name='GetMySpecificOldScreens'),    
     
     path('get_my_diseases/',views.MyPatientDisease.as_view()),
     path('get_all_chronic_diseases/',views.ChronicDiseaseView.as_view()),

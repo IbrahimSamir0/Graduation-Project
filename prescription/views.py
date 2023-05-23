@@ -17,7 +17,16 @@ from django.core.cache import cache
 import threading
 from django.db.models import F, Q, OuterRef, Subquery 
 from django.core import serializers as ser
-
+from rest_framework.parsers import MultiPartParser, FormParser,FileUploadParser
+import pydicom
+import matplotlib.pyplot as plt
+import numpy as np
+# import os
+import io
+from PIL import Image
+import pydicom.pixel_data_handlers as pdh
+from pydicom.pixel_data_handlers.util import apply_voi_lut
+from django.core.files.base import ContentFile
 
 
 # class MakePrescription(viewsets.ModelViewSet):
@@ -370,6 +379,7 @@ class GetMyScreens(generics.ListAPIView):
     def get(self, request):
         patient= Patient.objects.get(id=request.user.id)
         my_screens = Screen.objects.filter(patient=patient).order_by('-id')
+        # my_serial_films = SerialFilm.objects.filter(patient=patient).order_by('-id')
         if not my_screens:
             return Response({"status":False,
                              "data":None,
@@ -379,34 +389,228 @@ class GetMyScreens(generics.ListAPIView):
         return Response({"status":True,
                          "data":serializer.data,"message":"True"},status=status.HTTP_200_OK)
         
+
+# class AddOrUpdateScreenForPatient(generics.UpdateAPIView):
+#     parser_classes = [MultiPartParser, FormParser]
+#     authentication_classes = [TokenAuthentication,]
+#     permission_classes = [IsPatient,]
+#     serializer_class=PostSerialFilmAsFile
+#     def put(self, request,id):
+#         screen =Screen.objects.get(id= id)
+#         serializer= self.serializer_class(data= request.data)
+#         serializer.is_valid(raise_exception=True)
+#         images=self.convert_dicom_to_png(serializer.validated_data['file'])
+#         for image in images:
+#             SerialFilm.objects.create(
+#                 image = image,
+#                 screen = screen
+#             )
+#         # serializer.save()
+#         return Response({"status":True,"data":None,"message":"Success"},status=status.HTTP_200_OK)
+
+
+
+#     def normalize(self,gray):
+#         '''Function for making all values in image between 0 and 1'''
+#         gray = gray.astype(float)
+#         MIN_BOUND = gray.min()
+#         MAX_BOUND = gray.max()
+#         gray = (gray - MIN_BOUND) / (MAX_BOUND - MIN_BOUND)
+#         gray[gray > 1] = 1.
+#         gray[gray < 0] = 0.
+#         return gray
+
+    
+#     def convert_dicom_to_png(self, dicom_file):
+#         ds = pydicom.dcmread(dicom_file)
+#         pixel_array = ds.pixel_array[:5]
+        
+#         # pixel_array_normalized = np.apply_along_axis(self.normalize, axis=None, arr=pixel_array)
+#         pixel_array_normalized = [self.normalize(i) for i in pixel_array]
+
+
+#         return pixel_array_normalized
+
+
+
 class AddOrUpdateScreenForPatient(generics.UpdateAPIView):
+    # parser_classes = [FileUploadParser]
     authentication_classes = [TokenAuthentication,]
     permission_classes = [IsPatient,]
-    serializer_class=PostScreenSerializer
-    def put(self, request,id):
-        screen =Screen.objects.get(id= id)
-        serializer= self.serializer_class(screen, data= request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+    serializer_class=PostSerialFilmAsFile
+    
+    def post(self, request,id):
+        screen = Screen.objects.get(id=id)
+        data =request.data['file']
+        try:
+            image = self.convert_dicom_to_base64(data)   
+            SerialFilm.objects.create(
+            image='data:image/jpg;base64,'+ image,
+            screen=screen
+            ) 
+            return Response({"status":True,"data":None,"message":"Success"}, status=status.HTTP_200_OK)
+
+        except Exception :
+            SerialFilm.objects.create(
+                image= data,
+                screen=screen
+            )
+            return Response({"status":True,"data":None,"message":"Success"}, status=status.HTTP_200_OK)
+        except:
+            return Response({"status":False,"data":None,"message":"failed"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+    def normalize(self,gray):
+        '''Function for making all values in image between 0 and 1'''
+        gray = gray.astype(float)
+        MIN_BOUND = gray.min()
+        MAX_BOUND = gray.max()
+        gray = (gray - MIN_BOUND) / (MAX_BOUND - MIN_BOUND)
+        gray[gray > 1] = 1.
+        gray[gray < 0] = 0.
+        return gray
+    
+    def convert_dicom_to_base64(self,dicom_files):
+        try:
+            # Decode the Base64 string to bytes
+            base64_data = dicom_files.split(',')[1]  # Extract the base64 data from the string
+            dicom_bytes = base64.b64decode(base64_data)
+            dicom_data = pydicom.dcmread(io.BytesIO(dicom_bytes))
+            pixel_array = dicom_data.pixel_array
+            pixel_array_normalized = self.normalize(pixel_array)
+            pixel_array_uint8 = (pixel_array_normalized * 255).astype(np.uint8)
+            
+            # Convert the pixel array to a PNG image
+            image = Image.fromarray(pixel_array_uint8)
+            buffer = io.BytesIO()
+            image.save(buffer, format="PNG")
+            base64_string = base64.b64encode(buffer.getvalue()).decode("utf-8")
+            
+        except IndexError:
+            # Handle the case when the dicom_file does not match the expected format
+            print(f"Invalid dicom_file format: {dicom_files}")
+    
+        return base64_string
+    # def convert_dicom_to_base64(self, dicom_file):
+    #     # print(dicom_file)
+    #     # base = base64.b64decode(dicom_file)
+    #     # print(base)
+    #     base64_images = []
+    #     for _file in dicom_file:
+    #         dicom_bytes_io = io.BytesIO(_file)
+    #         print(dicom_bytes_io)
+    #         # base = base64.b64decode(_file)
+            
+    #         # pp.append(dicom_bytes_io)
+    #         temp = pydicom.dcmread(dicom_bytes_io)
+    #         pixel_array = temp.pixel_array
+    #         pixel_array_normalized = self.normalize(pixel_array)
+    #         with io.BytesIO() as buffer:
+    #         # Scale the pixel values to 0-255 range
+    #             image_scaled = (pixel_array_normalized * 255).astype(np.uint8)
+                
+    #             # Create a PNG image from the pixel array
+    #             Image.fromarray(image_scaled).save(buffer, format="PNG")
+                
+    #             # Encode the PNG image as a Base64 string
+    #             base64_image = base64.b64encode(buffer.getvalue()).decode()
+                
+    #             base64_images.append(base64_image)
+
+    #     return base64_images
+
+
+
+
+            # ds.append(temp)
+        # print (dicom_bytes_io)
+        # # Read the DICOM data using pydicom
+        # ds = pydicom.dcmread(dicom_bytes_io)
+        # pixel_array = ds.pixel_array
+        # ds = pydicom.dcmread(dicom_file, pixel_data_handlers=[pdh.numpy_handler])
+        # pixel_array = ds.pixel_array
+        # ds=[]
+        # for i in pp:
+        #     temp = pydicom.dcmread(i)
+        #     ds.append(temp)
+        
+        # if 'PixelData' not in ds:
+        #     raise ValueError("Unable to convert the pixel data: 'PixelData' attribute is missing.")
+
+        # pixel_array = apply_voi_lut(ds.pixel_array, ds)
+        # pixel_array = ds.pixel_array
+        # # Normalize pixel array
+        # pixel_array_normalized = [self.normalize(i) for i in pixel_array]
+        # plt.imshow(pixel_array,cmap='gray')
+        # plt.show()
+        # # Convert each image to Base64
+        # base64_images = []
+        # # for image in pixel_array_normalized[:5]:
+        # with io.BytesIO() as buffer:
+        #     # Scale the pixel values to 0-255 range
+        #     image_scaled = (image * 255).astype(np.uint8)
+            
+        #     # Create a PNG image from the pixel array
+        #     Image.fromarray(image_scaled).save(buffer, format="PNG")
+            
+        #     # Encode the PNG image as a Base64 string
+        #     base64_image = base64.b64encode(buffer.getvalue()).decode()
+            
+        #     base64_images.append(base64_image)
+
+        # return base64_images
+
+    # def convert_dicom_to_base64(self,dicom_data):
+    #     # Create a file-like object from the DICOM data
+    #     dicom_file = io.BytesIO(dicom_data)
+
+    #     # Load DICOM file
+    #     ds = pydicom.dcmread(dicom_file)
+
+    #     # Access the pixel data
+    #     pixel_array = ds.pixel_array
+
+    #     # Convert to PIL Image
+    #     image = Image.fromarray(pixel_array)
+
+    #     # Convert to JPEG
+    #     with io.BytesIO() as output:
+    #         image.save(output, format="JPEG")
+    #         jpeg_data = output.getvalue()
+
+    #     # Encode as base64
+    #     base64_data = base64.b64encode(jpeg_data).decode('utf-8')
+
+    #     return base64_data
+
+
+
+class GetSerialFilmView(generics.ListAPIView):
+    authentication_classes = [TokenAuthentication,]
+    permission_classes = [IsPatient]
+    serializer_class=SerialFilmSerializer
+    def get(self, request, id):
+        serial_films=SerialFilm.objects.filter(screen = id)
+        serializer =self.serializer_class(serial_films, many=True)
         return Response({"status":True,"data":serializer.data,"message":"Success"},status=status.HTTP_200_OK)
         
         
-class GetMySpecificScreens(generics.ListAPIView):
-    authentication_classes = [TokenAuthentication,]
-    permission_classes = [IsPatient]
-    serializer_class=PostScreenSerializer
-    def get(self, request, id):
-        patient= Patient.objects.get(id= request.user.id)
-        try:
-            my_screens = Screen.objects.get(id =id,patient=patient)
-            serializer= self.serializer_class(my_screens)
-            return Response({"status":True,
-                         "data":serializer.data,"message":"True"},status=status.HTTP_200_OK)
-        except Screen.DoesNotExist:
-            return Response({"status":False,
-                             "data":None,
-                             "message":"No Screens yet"},
-                            status=status.HTTP_200_OK)
+# class GetMySpecificScreens(generics.ListAPIView):
+#     authentication_classes = [TokenAuthentication,]
+#     permission_classes = [IsPatient]
+#     serializer_class=PostScreenSerializer
+#     def get(self, request, id):
+#         patient= Patient.objects.get(id= request.user.id)
+#         try:
+#             my_screens = Screen.objects.get(id =id,patient=patient)
+#             serializer= self.serializer_class(my_screens)
+#             return Response({"status":True,
+#                          "data":serializer.data,"message":"True"},status=status.HTTP_200_OK)
+#         except Screen.DoesNotExist:
+#             return Response({"status":False,
+#                              "data":None,
+#                              "message":"No Screens yet"},
+#                             status=status.HTTP_200_OK)
         
 class GetPatientScreens(generics.ListAPIView):
     authentication_classes =[TokenAuthentication,]

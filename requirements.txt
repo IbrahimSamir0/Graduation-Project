@@ -55,6 +55,7 @@ Markdown==3.4.1
 markdown-it-py==2.1.0
 MarkupSafe==2.1.2
 mdurl==0.1.2
+msedge-selenium-tools==3.141.4
 multidict==6.0.4
 mysql-connector==2.2.9
 mysql-connector-python==8.0.31
@@ -82,7 +83,7 @@ ruamel.yaml==0.17.21
 ruamel.yaml.clib==0.2.7
 schedule==1.1.0
 SDK==1.0.0
-selenium==4.8.3
+selenium==3.141.0
 six==1.16.0
 sniffio==1.3.0
 social-auth-app-django==5.1.0

@@ -1,7 +1,5 @@
-
-
 from . import constant as const
-from . parent import PARENT
+from .parent import PARENT
 from selenium.webdriver.common.by import By
 
 class STANDARD_DRUGS:

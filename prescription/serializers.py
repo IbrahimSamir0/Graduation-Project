@@ -110,12 +110,21 @@ class StandardScreensSerializer(serializers.ModelSerializer):
     class Meta:
         model = StandardScreens
         fields = ['id','name','description']
+        
+        
 
 class GetScreenSerialzer(serializers.ModelSerializer):
     screen=StandardScreensSerializer()
+    # serialfilms = SerialFilmSerializer(many=True, read_only=True)
     class Meta:
         model = Screen
-        fields = ['id','screen','deadline','image']
+        fields = ['id','screen','deadline']
+        
+class SerialFilmSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SerialFilm
+        fields ='__all__'
+
         
 class SetScreenSerializer(serializers.ModelSerializer):
     class Meta:
@@ -360,6 +369,13 @@ class PostScreenSerializer(serializers.ModelSerializer):
         #         patinet= pat,
         #         image= validated_data['image']
         #     )
+class PostSerialFilmAsFile(serializers.Serializer):
+    # file= serializers.FileField()
+    # ls =serializers.ListField()
+    ls = serializers.CharField()
+    class Meta:
+        fields=['ls']
+        
 class PostMedicalaAnalysisSerializer(serializers.ModelSerializer):
     class Meta:
         model = MedicalAnalysis

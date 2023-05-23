@@ -1,6 +1,6 @@
 # from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from . parent import PARENT
+from .parent import PARENT
 # from selenium.webdriver.support.ui import WebDriverWait
 import time
 
@@ -74,10 +74,8 @@ class INTERACTION():
         return p
 
     def validate_header(self,header):
-        txt= header.lower().replace('-',' ').strip()
-        
-        # print(txt.split(' '))
-        if self.ingredient.split(' ')[0] not in txt.split(' '):
+        txt= header.strip().lower().replace('-',' ')
+        if self.ingredient not in txt:
             return [False]
         else:
             # txt = ' '.join(txt)
@@ -85,10 +83,11 @@ class INTERACTION():
             txt = txt.replace('\'' , ' i')
             return [True,txt]
 
+
     def validate_interaction(self,interactions,parent):
         ans=''
         for i in interactions:
-            if i.find_element_by_xpath("..") == parent.find_element_by_xpath(".."):
+            if i.parent == parent:
                 interaction= i.text
                 if interaction[:8] != 'Consumer' or interaction[:6] != 'Switch' or interaction[:11] != 'Information':
                     ans+='      '+interaction
@@ -96,20 +95,17 @@ class INTERACTION():
 
     def prepare_data(self):
         header = self.get_header()
-        # print(header[0].text)
+        # print(header)
         interactions = self.get_interaction()
+        # return [header[0].text , interactions[0].text]
         res= []
         for h,i in zip(header,interactions):
             res_h= self.validate_header(h.text)
             if not res_h[0]:
                 continue
             second_ingredient= res_h[1]
-            description= self.validate_interaction(interactions,h.find_element_by_xpath(".."))
+            description= self.validate_interaction(interactions,h.parent)
             res.append((second_ingredient , description.strip()))
-        #     print(second_ingredient)
-        #     print('-'*50)
-        #     print(description)
-        # print('#'*200)
         return res
 
 

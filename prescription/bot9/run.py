@@ -1,8 +1,8 @@
 
 
-from . drug import DRUG
+from .drug import DRUG
 from . import constant as const
-from . standard_drugs import STANDARD_DRUGS
+from .standard_drugs import STANDARD_DRUGS
 
 class RUN():
     # db = DB()
@@ -37,7 +37,7 @@ class RUN():
             drugs = self.get_drugs_names()
         
         ln = len(drugs)
-        i =143
+        i =36
         for drug in drugs[i:]:
             drug_obj = DRUG()
             print('-'*100)
@@ -97,6 +97,3 @@ class RUN():
 
 run = RUN()
 run.prepare_drugs()
-
-
-

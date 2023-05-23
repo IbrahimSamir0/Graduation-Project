@@ -171,7 +171,6 @@ class StandardScreens(models.Model):
     
 class Screen (models.Model):
     screen = models.ForeignKey('StandardScreens', related_name='StandardScreens', on_delete=models.PROTECT)
-    image = models.TextField(null=True, blank=True)
     prescription = models.ForeignKey("Prescription", on_delete=models.CASCADE)
     patient =models.ForeignKey(Patient, on_delete=models.CASCADE)
     deadline= models.DateField()
@@ -180,6 +179,11 @@ class Screen (models.Model):
     
     def __str__(self):
         return self.screen.name
+
+class SerialFilm(models.Model):
+    image = models.TextField(null=True, blank=True)
+    screen= models.ForeignKey(Screen,on_delete=models.CASCADE)
+    
 
 class StandardMedicalAnalysis(models.Model):
     name = models.CharField(_("Medical Analysis"), max_length=50)

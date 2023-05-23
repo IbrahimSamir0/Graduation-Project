@@ -1,8 +1,8 @@
 
-from . parent import PARENT
-from . interaction import INTERACTION
-from . description import DESCRIPTION
-from . D_B import DB
+from .parent import PARENT
+from .interaction import INTERACTION
+from .description import DESCRIPTION
+from .D_B import DB
 from selenium.webdriver.common.by import By
 
 

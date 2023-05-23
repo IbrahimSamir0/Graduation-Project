@@ -9,7 +9,7 @@ from selenium.webdriver.common.by import By
 # from selenium.webdriver.edge import service
 # import time
 # from selenium.webdriver.support.wait import WebDriverWait
-from . parent import PARENT
+from .parent import PARENT
 
 
 
