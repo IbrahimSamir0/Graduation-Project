@@ -1,5 +1,6 @@
 
 
+
 from . drug import DRUG
 from . import constant as const
 from . standard_drugs import STANDARD_DRUGS
@@ -37,9 +38,10 @@ class RUN():
             drugs = self.get_drugs_names()
         
         ln = len(drugs)
-        i =143
+        i =276
         for drug in drugs[i:]:
             drug_obj = DRUG()
+            print(drug)
             print('-'*100)
             print(f'drug {i} from {ln} drugs')
             print('-'*50)
@@ -97,6 +99,4 @@ class RUN():
 
 run = RUN()
 run.prepare_drugs()
-
-
 

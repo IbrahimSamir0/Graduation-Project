@@ -8,7 +8,7 @@ app_name='prescription'
 urlpatterns = [
     # path('make_prescription/',views.makePrescription, name='create_prescription'),
     # path('create_prescription',views.MakePrescription.as_view({'get': 'list','post':'create'}), name='create_prescription'),
-    path('postScreen/',views.PostScreen.as_view(), name='postScreen'),
+    # path('postScreen/',views.PostScreen.as_view(), name='postScreen'),
     # path('view',views.viewOldPrescriptions, name='ViewOldPrescriptions'),
     # path('postscreens/',views.upload_image, name='PostScreen'),
     
@@ -52,11 +52,20 @@ urlpatterns = [
     # path('get_my_test/<int:id>/',views.GetMySpecificScreens.as_view(),name='GetMySpecificOldScreens'),    
     
     path('get_my_diseases/',views.MyPatientDisease.as_view()),
+    path('get_my_diseases/<int:id>/',views.SpecificPatientDiseaseView.as_view()),
+    path('get_patient_diseases_for_doctor/<int:id>/',views.GetPatientDiseaseView.as_view()),
+    path('get_patient_drugs_for_doctor/<int:id>/',views.GetPatientDrugsView.as_view()),
     path('get_all_chronic_diseases/',views.ChronicDiseaseView.as_view()),
     path('get_all_standard_screens/',views.StandardScreensView.as_view()),
     path('get_all_standard_tests/',views.StandardTestView.as_view()),
     
     path('commitment/<int:id>/',views.CommitmentView.as_view()),
+    
+    path('PatientDrugView/',views.PatientDrugView.as_view()),
+    path('PatientDrugView/<int:id>/',views.PatientDrugDeleteView.as_view()),
+    
+    path('ImageEditorView/<int:id>/',views.ImageEditorView.as_view()),
+    
     
     # path('set_drug/',views.SetDrug.as_view(), name='SetDrug'),   
 ]

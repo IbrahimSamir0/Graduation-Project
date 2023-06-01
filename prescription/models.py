@@ -183,7 +183,9 @@ class Screen (models.Model):
 class SerialFilm(models.Model):
     image = models.TextField(null=True, blank=True)
     screen= models.ForeignKey(Screen,on_delete=models.CASCADE)
+    instance_number= models.PositiveSmallIntegerField(default= 0)
     
+
 
 class StandardMedicalAnalysis(models.Model):
     name = models.CharField(_("Medical Analysis"), max_length=50)
@@ -268,4 +270,3 @@ class ChronicDiseases(models.Model):
     def __str__(self):
         return self.disease
 
-    

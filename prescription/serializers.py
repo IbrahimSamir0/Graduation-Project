@@ -8,7 +8,7 @@ from django.http.response import JsonResponse
 from rest_framework.fields import CurrentUserDefault
 from django.utils import timezone
 import datetime
-from accounts.models import PatientDiseases, Patient
+from accounts.models import PatientDiseases, Patient, PatientDrug
 from accounts.serializers import CitySerializer
 
 # class Clinicals(serializers.Serializer):
@@ -357,10 +357,10 @@ class CreatePrescriptionSerializer(serializers.ModelSerializer):
     
 
     
-class PostScreenSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Screen
-        fields = ['image']
+# class PostScreenSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Screen
+#         fields = ['image']
         
         # def create(self,validated_data):
         #     pat = Patient.objects.get(id=self.context['request'].user.id)
@@ -440,11 +440,20 @@ class GetPatientDiseaseSerializer(serializers.ModelSerializer):
     disease=ChronicDiseaseSerializer()
     class Meta:
         model = PatientDiseases
-        fields=['disease','disease_date']
+        fields=['id','disease','disease_date']
         
 class PatientDiseasesSerializer(serializers.ModelSerializer):
     class Meta:
         model = PatientDiseases
         fields = [ 'disease', 'disease_date']
 
+class GetPatientDrugSerializer(serializers.ModelSerializer):
+    standard_drug= DrugDeteailsSerializer()
+    class Meta:
+        model = PatientDrug
+        fields=['id','standard_drug']
         
+# class PostPatientDrugsSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = PatientDrug
+#         fields = ['standard_drug']

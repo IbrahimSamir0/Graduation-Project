@@ -222,6 +222,7 @@ class Patient (User,UserInheritance):
     city= models.ForeignKey(City, on_delete=models.PROTECT)
     doctor_id = models.ForeignKey("Doctor", verbose_name=("Doctor_id"), on_delete=models.PROTECT,blank=True, null=True)
     disease = models.ManyToManyField("prescription.ChronicDiseases", through='PatientDiseases')
+    standard_drug = models.ManyToManyField("prescription.StandardDrugs", through='PatientDrug')
     # booking = models.ForeignKey('prescription.Booking',on_delete=models.PROTECT,blank=True, null=True)
     # def get_age ():
     #     age= UserInheritance.objects.get()
@@ -246,6 +247,12 @@ class PatientDiseases(models.Model):
     def __str__(self):
         return f"{self.patinet.username} ({self.disease.disease})"
 
+class PatientDrug(models.Model):
+    patinet= models.ForeignKey(Patient, on_delete=models.CASCADE)
+    standard_drug= models.ForeignKey("prescription.StandardDrugs", on_delete=models.CASCADE)
+    class Meta:
+        unique_together =(('standard_drug','patinet'),)
+        index_together =(('standard_drug','patinet'),)
 
 class Doctor(User,UserInheritance):
     date_birth = models.DateField(validators= [future_date_validator])

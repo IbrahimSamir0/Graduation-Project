@@ -12,8 +12,7 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import api_view
 from datetime import date ,datetime,timedelta
 from django.core.cache import cache
-# from .bot.run import RUN
-# from .zoz.run import RUN
+from .bot.run import RUN
 import threading
 from django.db.models import F, Q, OuterRef, Subquery 
 from django.core import serializers as ser
@@ -154,7 +153,7 @@ class GetAllStandardDrugsName(generics.ListAPIView):
         return standard_drugs
 
 class GetAllStandardDrugsNameFilter(generics.ListAPIView):
-    permission_classes=[IsDoctor,]
+    permission_classes=[IsAuthenticated,]
     authentication_classes = [TokenAuthentication,]
     def get(self, request, format=None):
         query = request.GET.get('q', '')
@@ -364,13 +363,13 @@ class DrugDeteails(generics.CreateAPIView):
 #         return Response(json.loads(serializer))
         
         
-class PostScreen(generics.CreateAPIView):
-    serializer_class=PostScreenSerializer
-    def post(self,request ,format=None):
-        serializer = self.serializer_class(data= request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response({"status":True,"data":None,"message":"Sucsess"}, status= status.HTTP_201_CREATED) 
+# class PostScreen(generics.CreateAPIView):
+#     serializer_class=PostScreenSerializer
+#     def post(self,request ,format=None):
+#         serializer = self.serializer_class(data= request.data)
+#         serializer.is_valid(raise_exception=True)
+#         serializer.save()
+#         return Response({"status":True,"data":None,"message":"Sucsess"}, status= status.HTTP_201_CREATED) 
     
 class GetMyScreens(generics.ListAPIView):
     authentication_classes = [TokenAuthentication,]
@@ -378,7 +377,7 @@ class GetMyScreens(generics.ListAPIView):
     serializer_class=GetScreenSerialzer
     def get(self, request):
         patient= Patient.objects.get(id=request.user.id)
-        my_screens = Screen.objects.filter(patient=patient).order_by('-id')
+        my_screens = Screen.objects.filter(patient= patient ,serialfilm__isnull=False).distinct().order_by('-id')
         # my_serial_films = SerialFilm.objects.filter(patient=patient).order_by('-id')
         if not my_screens:
             return Response({"status":False,
@@ -445,9 +444,10 @@ class AddOrUpdateScreenForPatient(generics.UpdateAPIView):
         try:
             image = self.convert_dicom_to_base64(data)   
             SerialFilm.objects.create(
-            image='data:image/jpg;base64,'+ image,
-            screen=screen
-            ) 
+            image='data:image/jpg;base64,'+ image[0],
+            screen=screen,
+            instance_number = image[1]
+            )
             return Response({"status":True,"data":None,"message":"Success"}, status=status.HTTP_200_OK)
 
         except Exception :
@@ -459,6 +459,12 @@ class AddOrUpdateScreenForPatient(generics.UpdateAPIView):
         except:
             return Response({"status":False,"data":None,"message":"failed"}, status=status.HTTP_400_BAD_REQUEST)
 
+    def delete(self,request,id):
+        screen = Screen.objects.get(id=id)
+        serial_films = SerialFilm.objects.filter(screen = screen)
+        serial_films.delete()
+        return Response({"status":True,"data":None,"message":"Success"}, status=status.HTTP_200_OK)
+        
 
     def normalize(self,gray):
         '''Function for making all values in image between 0 and 1'''
@@ -476,6 +482,7 @@ class AddOrUpdateScreenForPatient(generics.UpdateAPIView):
             base64_data = dicom_files.split(',')[1]  # Extract the base64 data from the string
             dicom_bytes = base64.b64decode(base64_data)
             dicom_data = pydicom.dcmread(io.BytesIO(dicom_bytes))
+            instance_number = dicom_data.InstanceNumber
             pixel_array = dicom_data.pixel_array
             pixel_array_normalized = self.normalize(pixel_array)
             pixel_array_uint8 = (pixel_array_normalized * 255).astype(np.uint8)
@@ -485,12 +492,14 @@ class AddOrUpdateScreenForPatient(generics.UpdateAPIView):
             buffer = io.BytesIO()
             image.save(buffer, format="PNG")
             base64_string = base64.b64encode(buffer.getvalue()).decode("utf-8")
-            
+            print(instance_number)
         except IndexError:
             # Handle the case when the dicom_file does not match the expected format
             print(f"Invalid dicom_file format: {dicom_files}")
     
-        return base64_string
+        return (base64_string, instance_number)
+
+        # return base64_string
     # def convert_dicom_to_base64(self, dicom_file):
     #     # print(dicom_file)
     #     # base = base64.b64decode(dicom_file)
@@ -615,10 +624,11 @@ class GetSerialFilmView(generics.ListAPIView):
 class GetPatientScreens(generics.ListAPIView):
     authentication_classes =[TokenAuthentication,]
     permission_classes = [IsDoctor,]
-    serializer_class = PostScreenSerializer
+    serializer_class = GetScreenSerialzer
     def get(self,request,id):
         patient = Patient.objects.get(id = id)
-        screens = Screen.objects.filter(patient=patient).order_by('-id')
+        screens = Screen.objects.filter(patient=patient,serialfilm__isnull=False).distinct().order_by('-id')
+        #  serialfilm__isnull=False)
         serializer = self.serializer_class(screens, many= True)
         return Response({"status":True,"data":serializer.data,"message":"Success"},status=status.HTTP_200_OK)
 
@@ -661,15 +671,15 @@ class AddOrUpdateMedicalAnalysisForPatient(generics.UpdateAPIView):
         return Response({"status":True,"data":serializer.data,"message":"Success"},status=status.HTTP_200_OK)
         
 
-class GetPatientMedicalAnalysis(generics.ListAPIView):
-    authentication_classes =[TokenAuthentication,]
-    permission_classes = [IsDoctor,]
-    serializer_class = PostScreenSerializer
-    def get(self,request,id):
-        patient = Patient.objects.get(id = id)
-        tests = MedicalAnalysis.objects.filter(patient=patient).order_by('-id')
-        serializer = self.serializer_class(tests, many= True)
-        return Response({"status":True,"data":serializer.data,"message":"Success"},status=status.HTTP_200_OK)
+# class GetPatientMedicalAnalysis(generics.ListAPIView):
+#     authentication_classes =[TokenAuthentication,]
+#     permission_classes = [IsDoctor,]
+#     serializer_class = PostScreenSerializer
+#     def get(self,request,id):
+#         patient = Patient.objects.get(id = id)
+#         tests = MedicalAnalysis.objects.filter(patient=patient).order_by('-id')
+#         serializer = self.serializer_class(tests, many= True)
+#         return Response({"status":True,"data":serializer.data,"message":"Success"},status=status.HTTP_200_OK)
     
         
 # class GetMyActiveScreen(generics.ListAPIView):
@@ -1105,14 +1115,16 @@ class GetMyActivePrescription(generics.ListAPIView):
         doctor = Doctor.objects.get(id = prescription.doctor.id)
         clinical = Clinical.objects.get (id =prescription.clinical.id)
         drugs = Drug.objects.filter(prescription=prescription.id)
-        screens= Screen.objects.filter(prescription=prescription.id)
+        empty_screens= Screen.objects.filter(prescription=prescription.id,serialfilm__isnull=True)
+        full_screens= Screen.objects.filter(prescription=prescription.id,serialfilm__isnull=False).distinct()
         medical_analysis = MedicalAnalysis.objects.filter(prescription=prescription.id)
         prescription_serializer = GetPrescriptionSerializer(prescription).data
         patient_serializer = GetPatientSerializer(patient).data
         doctor_serializer = GetDoctorSerializer(doctor).data
         clinical_serializer = GetClinicalSerializer(clinical).data
         drugs_serializer = SetDrugSerializer(drugs,many = True).data
-        screens_serializer = GetScreenSerialzer (screens, many = True).data
+        screens_serializer = GetScreenSerialzer (empty_screens, many = True).data
+        full_screens_serializer = GetScreenSerialzer (full_screens, many = True).data
         medical_analysis_serializer = GetMedicalAnalysisSerializer(medical_analysis, many = True).data
         # serializer =self.serializer_class(prescription,many=True)
         serializer  ={"prescription":prescription_serializer,
@@ -1121,6 +1133,7 @@ class GetMyActivePrescription(generics.ListAPIView):
                       "clinical":clinical_serializer,
                       "drugs":drugs_serializer,
                       "screens":screens_serializer,
+                      "full_screens":full_screens_serializer,
                       "medical_analysis":medical_analysis_serializer}
                     
         return Response({"status":True,"data":serializer,"message":"Success"},status=status.HTTP_200_OK)
@@ -1561,7 +1574,47 @@ class MyPatientDisease(generics.ListCreateAPIView):
                          "message":"Success"}
                         ,status=status.HTTP_201_CREATED)
             
-            
+class SpecificPatientDiseaseView(generics.DestroyAPIView):
+    authentication_classes= [TokenAuthentication,]
+    permission_classes= [IsPatient,]
+    def delete(self, request, id):
+        patient = Patient.objects.get(id = request.user.id)
+        disease =PatientDiseases.objects.get(id=id , patinet=patient)
+        disease.delete()
+        return Response({"status":True,
+                         "data":None,
+                         "message":"Success"}
+                        ,status=status.HTTP_200_OK)
+
+class GetPatientDiseaseView(generics.ListAPIView):
+    authentication_classes= [TokenAuthentication,]
+    permission_classes= [IsDoctor,]
+    serializer_class=GetPatientDiseaseSerializer
+    def get(self, request,id):
+        patient = Patient.objects.get(id = id)
+        disease = PatientDiseases.objects.filter(patinet=patient)
+        if not disease:
+            return Response({"status":False,
+                         "data":None,
+                         "message":"No disease"}
+                        ,status=status.HTTP_200_OK)
+        serializer = self.serializer_class(disease, many = True)
+        return Response({"status":True,
+                         "data":serializer.data,
+                         "message":"Success"}
+                        ,status=status.HTTP_200_OK)
+        
+class GetPatientDrugsView(generics.ListAPIView):
+    authentication_classes= [TokenAuthentication,]
+    permission_classes= [IsDoctor,]
+    serializer_class=GetPatientDrugSerializer
+    def get(self,request,id):
+        patient = Patient.objects.get(id=id)
+        drugs = PatientDrug.objects.filter(patinet=patient)
+        serializer = self.serializer_class(drugs, many=True)
+        return Response({'status':True,'data':serializer.data,'message':'Success'},status=status.HTTP_200_OK)
+
+    
 class ChronicDiseaseView(generics.ListAPIView):
     authentication_classes= [TokenAuthentication,]
     permission_classes= [IsPatient,]
@@ -1699,3 +1752,60 @@ class CommitmentView(generics.ListCreateAPIView):
 #             prescription_data.save()
 #             return Response(all_prescription.data,status= status.HTTP_201_CREATED)
 #         return Response(prescription_data.data,status= status.HTTP_400_BAD_REQUEST)
+
+class PatientDrugView(generics.ListCreateAPIView):
+    authentication_classes=[TokenAuthentication,]
+    permission_classes= [IsPatient,]
+    serializer_class=GetPatientDrugSerializer
+    def get(self,request):
+        patient = Patient.objects.get(id=request.user.id)
+        drugs = PatientDrug.objects.filter(patinet=patient)
+        serializer = self.serializer_class(drugs, many=True)
+        return Response({'status':True,'data':serializer.data,'message':'Success'},status=status.HTTP_200_OK)
+
+    def post(self, request):
+        patient = Patient.objects.get(id=request.user.id)
+        standard_drug = StandardDrugs.objects.get(name=request.data['standard_drug'])
+        try:
+            PatientDrug.objects.create(standard_drug=standard_drug,
+                                    patinet=patient
+                                    )
+            return Response({'status':True,'data':None,'message':'Success'},status=status.HTTP_201_CREATED)
+        except Exception:
+            return Response({'status':False,'data':None,'message':'This drug already exists'},status=status.HTTP_400_BAD_REQUEST)
+            
+
+class PatientDrugDeleteView(generics.DestroyAPIView):
+    authentication_classes=[TokenAuthentication,]
+    permission_classes= [IsPatient,]
+    def delete(self,request, id):
+        patient = Patient.objects.get(id=request.user.id)
+        try:
+            drug = PatientDrug.objects.get(id= id, patinet= patient)
+            drug.delete()
+            return Response({'status':True,'data':None,'message':'Success'},status=status.HTTP_200_OK)
+        except PatientDrug.DoesNotExist:
+            return Response({'status':False,'data':None,'message':'No drug with this id'},status=status.HTTP_400_BAD_REQUEST)
+        
+class ImageEditorView(generics.ListAPIView):
+    authentication_classes=[TokenAuthentication,]
+    permission_classes= [IsDoctor,]
+    serializer_class = SerialFilmSerializer
+    def get(self, request, id):
+        patient= Patient.objects.get(id= id)
+        screens= Screen.objects.filter(patient= patient, serialfilm__isnull=False).distinct()
+        serial_films = SerialFilm.objects.filter(screen__in= screens).order_by('instance_number')
+        serializer = self.serializer_class(serial_films, many=True)
+        return Response({'status':True,'data':serializer.data,'folders_count':screens.count(),'message':'Success'},status=status.HTTP_200_OK)
+
+class GetSerialFilmsForPatient(generics.ListAPIView):
+    authentication_classes=[TokenAuthentication,]
+    permission_classes= [IsDoctor,]
+    serializer_class = SerialFilmSerializer
+    def get(self, request, p_id, id):
+        patient= Patient.objects.get(id= p_id)
+        screen = Screen.objects.get(patient=patient,id=id)
+        serial_films = SerialFilm.objects.filter(screen= screen).order_by('id')
+        serializer = self.serializer_class(serial_films, many=True)
+        return Response({'status':True,'data':serializer.data,'message':'Success'},status=status.HTTP_200_OK)
+

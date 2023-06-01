@@ -40,6 +40,7 @@ urlpatterns = [
     path('api/my_patient_profile/<int:patient_id>/make_prescription/',views.SetPrescription.as_view(), name='PatientprofileDetailAPI'),
     path('api/my_patient_profile/<int:id>/get_screens/',views.GetPatientScreens.as_view(), name='GetPatientScreens'),
     path('api/my_patient_profile/<int:id>/get_tests/',views.GetPatientTests.as_view(), name='GetPatientTests'),
+    path('api/my_patient_profile/<int:p_id>/get_screens/<int:id>/',views.GetSerialFilmsForPatient.as_view(), name='GetPatientTests'),
     
     # path('api/get_doctor_clinicals/',views.GetCurentClinicalForPatient.as_view(),name='GetCurentClinicalForPatient'),
     
