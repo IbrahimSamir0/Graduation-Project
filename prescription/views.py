@@ -185,14 +185,14 @@ class SetPrescription(generics.CreateAPIView):
             try:
                 _drug = StandardDrugs.objects.get(name=drug['drug_name'])
             except StandardDrugs.DoesNotExist:
-                pass
-                # run = RUN()
-                # run.open()
+                # pass
+                run = RUN()
+                err_list=run.prepare_drugs([drug['drug_name']])
                 # err_list =run.prepare_drugs([drug['drug_name']])
-                # if not err_list:
-                #     _drug = StandardDrugs.objects.get(name=drug['drug_name'])
-                # else:
-                #     _drug= None
+                if not err_list:
+                    _drug = StandardDrugs.objects.get(name=drug['drug_name'])
+                else:
+                    _drug= None
             if _drug is not None:
                 new_drug=Drug.objects.create(
                     prescription = prescription,

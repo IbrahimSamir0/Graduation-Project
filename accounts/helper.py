@@ -11,6 +11,9 @@ from django.contrib.auth import  authenticate,login, get_user_model
 from django.contrib import messages
 from django.shortcuts import redirect,render
 from rest_framework.authtoken.models import Token
+from rest_framework import generics , status
+from rest_framework.response import Response
+from .models import User
 
 
 def sendForgerPasswordMail(email, token, encoded_pk):
@@ -28,40 +31,64 @@ def sendForgerPasswordMail(email, token, encoded_pk):
 # accounts:password_reset
 
 
-
-def activate(request, uidb64, token):
-    User = get_user_model()
-    try:
-        uid = force_str(urlsafe_base64_decode(uidb64))
-        user = User.objects.get(pk=uid)
-    except:
-        user = None
+class Activate (generics.GenericAPIView):
+    def get(self, request, uidb64, token):
+        # User = get_user_model()
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+            u_token = Token.objects.get(user=user.id)
+            if str(u_token) == token:
+                user.is_active = True
+                user.save()
+                return Response(status=status.HTTP_200_OK)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         
-    if user is not None and account_activation_token.check_token(user, token):
-        user.is_active = True
-        user.save()
-        Token.objects.create(user= user) 
+        except:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        #     user = None
+        # if u_token == token:
+        #     temp = 1
+        # else :
+        #     temp = 0
+        # if user is not None and u_token == token:
+        #     user.is_active = True
+        #     user.save()
+        #     # Token.objects.create(user= user) 
 
-        messages.success(request, "Thank you for your email confirmation. Now you can login your account.")
-        return redirect('login')
-    else:
-        messages.error(request, "Activation link is invalid!")
+        #     # messages.success(request, "Thank you for your email confirmation. Now you can login your account.")
+        #     # return redirect('login')
+        #     return Response(status=status.HTTP_200_OK)
+        # else:
+        #     return Response({f'{user.id} {token} {u_token}'},status=status.HTTP_400_BAD_REQUEST)
 
-    return redirect('login')
+    # return redirect('login')
 
 def activateEmail(request, user, to_email):
     mail_subject = 'Activate your user account.'
-    message = render_to_string("registration/template_activate_account.html",{
-        'user': user.username,
-        'domain': get_current_site(request).domain,
-        'uid': urlsafe_base64_encode(force_bytes(user.pk)),
-        'token': account_activation_token.make_token(user),
-        "protocol": 'https' if request.is_secure() else 'http'
-    })
+    encoded_pk =urlsafe_base64_encode(force_bytes(user.pk))
+    token = Token.objects.get(user= user) 
+    message = f'''Hi, click on the link to activate your account on Bronco360
+    http://localhost:8081/loginactivationpg/{encoded_pk}/{token}/
+
+
+
+
+Reminder: Do not click on this link if you are not the one who asked.'''
+    # message = render_to_string("registration/template_activate_account.html",{
+    #     'user': user.username,
+    #     'domain': get_current_site(request).domain,
+    #     'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+    #     'token': account_activation_token.make_token(user),
+    #     "protocol": 'https' if request.is_secure() else 'http'
+    # })
     email = EmailMessage(mail_subject, message, to=[to_email])
     if email.send():
-        messages.success(request,f'Dear <b>{user}</b>, please go to your email<b>{to_email}</b> inbox and click on \
-            received activation link to confirm and complete the registration. <b>Note:</b> check your span folder.')
+        # messages.success(request,f'Dear <b>{user}</b>, please go to your email<b>{to_email}</b> inbox and click on \
+        #     received activation link to confirm and complete the registration. <b>Note:</b> check your span folder.')
+        return Response({'message':f'Dear <b>{user}</b>, please go to your email<b>{to_email}</b> inbox and click on \
+            received activation link to confirm and complete the registration. <b>Note:</b> check your span folder.'},status=status.HTTP_200_OK)
     else:
-        messages.error(request, f'Problem sending email to {to_email}, check if you typed it correctly.')
+        # messages.error(request, f'Problem sending email to {to_email}, check if you typed it correctly.')
+        return Response({'message':f'Problem sending email to {to_email}, check if you typed it correctly.'},status=status.HTTP_400_BAD_REQUEST)
     

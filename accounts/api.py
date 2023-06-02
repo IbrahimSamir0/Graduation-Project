@@ -226,10 +226,10 @@ class RegisterAsPatientAPI(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user=serializer.save()
-        # activateEmail(request, user ,serializer.validated_data.get('email'))
+        activateEmail(request, user ,serializer.validated_data.get('email'))
         return Response({
         # "user": DoctorSerializer(user, context=self.get_serializer_context()).data,
-        "token": Token.objects.get(user =user).key
+        # "token": Token.objects.get(user =user).key
         }, status= status.HTTP_201_CREATED)
         
 class MyProfilePatient(generics.ListAPIView):
@@ -272,7 +272,7 @@ class RegisterAsDoctorAPI(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        # activateEmail(request, user ,serializer.validated_data.get('email'))
+        activateEmail(request, user ,serializer.validated_data.get('email'))
         return Response({
         # "user": DoctorSerializer(user, context=self.get_serializer_context()).data,
         "token": Token.objects.get(user =user).key

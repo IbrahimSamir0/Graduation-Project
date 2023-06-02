@@ -12,7 +12,6 @@ from rest_framework.decorators import api_view, permission_classes
 @permission_classes([IsAdmin])
 def contactGET (request,):
     if request.method == 'GET':
-        permission_classes = [IsAdmin]
         contacts = contactModel.objects.all()
         serialzer = contactSerializer (contacts , many=True)
         return Response(serialzer.data)
@@ -21,7 +20,6 @@ def contactGET (request,):
 @permission_classes([AllowAny])
 def contactPOST (request):   
     if request.method == 'POST':
-        permission_classes=[AllowAny]
         serializer=contactSerializer(data= request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()

@@ -86,9 +86,6 @@ class RegisterSerializerAsPatient(serializers.ModelSerializer):
     
     def create(self, validated_data):
         patient_type = UserType.objects.get(typ = 1)
-        # def split(email):
-        #     username, domain = email.split("@"),
-        #     return username
         user = Patient(
             email=validated_data['email'] ,
             username = self.randomUsername(validated_data['first_name'].lower()+validated_data['last_name'].lower()),
@@ -99,7 +96,7 @@ class RegisterSerializerAsPatient(serializers.ModelSerializer):
             gender=validated_data['gender'],
             city=validated_data['city'],
             date_birth=validated_data['date_birth'],
-            # is_active =False,
+            is_active =False,
             password = make_password(validated_data['password'])
         )
         user.save()
@@ -137,7 +134,7 @@ class RegisterSerializerAsDoctor(serializers.ModelSerializer):
             gender=validated_data['gender'],
             city=validated_data['city'],
             date_birth=validated_data['date_birth'],
-            # is_active =False,
+            is_active =False,
             # doctor_number=validated_data['doctor_number'],
             password = make_password(validated_data['password'])
         )

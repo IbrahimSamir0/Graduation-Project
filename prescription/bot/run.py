@@ -38,8 +38,8 @@ class RUN():
             drugs = self.get_drugs_names()
         
         ln = len(drugs)
-        i =276
-        for drug in drugs[i:]:
+        i =1
+        for drug in drugs:
             drug_obj = DRUG()
             print(drug)
             print('-'*100)
@@ -97,6 +97,6 @@ class RUN():
 
 
 
-run = RUN()
-run.prepare_drugs()
+# run = RUN()
+# run.prepare_drugs()
 

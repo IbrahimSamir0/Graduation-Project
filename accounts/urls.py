@@ -26,7 +26,7 @@ urlpatterns = [
     # path('profile/',views.profile, name='patient_profile'),
     # path('profile/edit/',views.editProfile, name='edit_profile'),
     # path('profile/edit/change_password',views.changePass, name='edit_profile'),
-    # path('activate/<uidb64>/<token>', helper.activate, name='activate'),
+    path('api/activate/<str:uidb64>/<str:token>/', helper.Activate.as_view(), name='activate'),
     # path('oauth/', include('social_django.urls', namespace='social')),  # <-- here
        
         # #API
