@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import *
 admin.site.register(Clinical)
 admin.site.register(Prescription)
-admin.site.register(StandardDrugs)
+# admin.site.register(StandardDrugs)
 admin.site.register(Drug)
 admin.site.register(Screen)
 admin.site.register(StandardScreens)
@@ -21,4 +21,10 @@ class AdminActiveIngredient (admin.ModelAdmin):
     search_fields = ['id','name']
 
 
+
+class AdminStandardDrug (admin.ModelAdmin):
+    search_fields = ['id','name']
+
+
 admin.site.register(active_Ingredient, AdminActiveIngredient)
+admin.site.register(StandardDrugs, AdminStandardDrug)

@@ -1,9 +1,9 @@
 
 
-
 from . drug import DRUG
 from . import constant as const
 from . standard_drugs import STANDARD_DRUGS
+import traceback
 
 class RUN():
     # db = DB()
@@ -32,21 +32,26 @@ class RUN():
         return standard_drugs.get_name_and_active_ingredient()
     
 
-    def prepare_drugs(self,drugs=None):
+    def prepare_drugs(self, drugs=None):
         print('entered')
+        
         if drugs == None:
             drugs = self.get_drugs_names()
+            
+        # ln = len(drugs)
+        # i = 1
+        problem_drug = set()
         
-        ln = len(drugs)
-        i =1
         for drug in drugs:
+            prob = 1
             drug_obj = DRUG()
+            print('-'*100)
             print(drug)
             print('-'*100)
-            print(f'drug {i} from {ln} drugs')
-            print('-'*50)
+            # print(f'drug {i} from {ln} drugs')
+            # print('-'*50)
             print('h1')
-        # try:
+
             drug_obj.SetDrug(drug)
             drug_obj.parent.landFirstPage(const.BASE_URL)
             print('h1')
@@ -56,47 +61,65 @@ class RUN():
             print('h2')
             drug_obj.parent.closeSmallPopUp()
             drug_obj.parent.closePopUp()
-            drug_obj.interaction.click_interaction()
+            prob = drug_obj.interaction.click_interaction()
+            if prob == 0:
+                problem_drug.add(drug)
+            print(prob)
             print('h3')
             drug_obj.parent.closeSmallPopUp()
             drug_obj.parent.closePopUp()
-            drug_obj.interaction.click_on_interaction_number()
+            prob = drug_obj.interaction.click_on_interaction_number()
+            if prob == 0:
+                problem_drug.add(drug)
             print('h4')
             drug_obj.parent.closeSmallPopUp()
             drug_obj.parent.closePopUp()
+
             if not drug_obj.is_ingredient_has_1(drug_obj.interaction.ingredient):
-                drug_obj.interaction.scrapInteractions()
+                prob = drug_obj.interaction.scrapInteractions()
+                if prob == 0:
+                    problem_drug.add(drug)
                 print('f1')
         
-            if not drug_obj.interaction.ingredient:
-                continue
-            drug_obj.parent.closeSmallPopUp()
-            drug_obj.parent.closePopUp()
-            drug_obj.parent.search(drug)
-            drug_obj.parent.closeSmallPopUp()
-            drug_obj.parent.closePopUp()
-            drug_obj.description.clickFirstLink()
-            drug_obj.parent.closeSmallPopUp()
-            drug_obj.parent.closePopUp()
-            drug_obj.description.clickSideEffectLink()
-            drug_obj.parent.closeSmallPopUp()
-            drug_obj.parent.closePopUp()
-            drug_obj.description.get_side_effects()
-            drug_obj.description.drug_uses()
-            drug_obj.description.drug_warnings()
-            drug_obj.description.drug_overdose()
-            drug_obj.description.drug_missed_dose()
-            drug_obj.description.drug_how_to_take()
-            drug_obj.description.drug_what_to_avoid()
-            drug_obj.description.drug_before_taking()
+            if drug_obj.interaction.ingredient:
+                drug_obj.parent.closeSmallPopUp()
+                drug_obj.parent.closePopUp()
+                drug_obj.parent.search(drug)
+                drug_obj.parent.closeSmallPopUp()
+                drug_obj.parent.closePopUp()
+                
+                drug_obj.description.clickFirstLink()
+                drug_obj.parent.closeSmallPopUp()
+                drug_obj.parent.closePopUp()
+                
+                drug_obj.description.clickSideEffectLink()
+                drug_obj.parent.closeSmallPopUp()
+                drug_obj.parent.closePopUp()
+                
+                drug_obj.description.get_side_effects()
+                drug_obj.description.drug_uses()
+                drug_obj.description.drug_warnings()
+                drug_obj.description.drug_overdose()
+                drug_obj.description.drug_missed_dose()
+                drug_obj.description.drug_how_to_take()
+                drug_obj.description.drug_what_to_avoid()
+                drug_obj.description.drug_before_taking()
+                drug_obj.add_drug_to_db()
+                
+
             
-            drug_obj.add_drug_to_db()
-            print(f'drug number {i} ended')
+            # print(f'drug number {i} ended')
             print('#'*150)
-            i += 1
+                
+            # i += 1
+        
+        # print(list(problem_drug))
+        return list(problem_drug)
 
 
 
 # run = RUN()
-# run.prepare_drugs()
+# run.prepare_drugs(['afinitor'])
+
+
 

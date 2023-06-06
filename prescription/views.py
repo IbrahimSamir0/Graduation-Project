@@ -162,6 +162,8 @@ class GetAllStandardDrugsNameFilter(generics.ListAPIView):
         results = [str(obj) for obj in standard_drugs]
         return Response({"status":True,"data":results,"message":"successful"},status=status.HTTP_200_OK)
 
+
+
 class SetPrescription(generics.CreateAPIView):
     permission_classes = [IsDoctor,]
     authentication_classes = [TokenAuthentication,]
@@ -246,11 +248,11 @@ class SetPrescription(generics.CreateAPIView):
                 patient = Patient.objects.get(id= patient_id),
                 **m
                 )
-        patient_booking=PatientBooking.objects.get(patient=patient,doctor=doctor)
-        patient_booking.delete()
-        # objs = Prescription.objects.filter(cancelation_date__isnull=True).exclude(id=prescription.id)
-        # objs.update(cancelation_date=date.today())
-
+        try:
+            patient_booking=PatientBooking.objects.get(patient=patient)
+            patient_booking.delete()
+        except PatientBooking.DoesNotExist:
+            pass
 
     
     def post(self, request, patient_id,):
@@ -273,10 +275,8 @@ class SetPrescription(generics.CreateAPIView):
                     "data":None,
                     "message":"Success"},
                     status=status.HTTP_201_CREATED)
-            
-        # prescription_serializer = serializer.validated_data.pop('prescription')
-        # prescription_serializer.is_valid(raise_exception= True)
-        
+
+
 class DrugDeteails(generics.CreateAPIView):
     permission_classes = [IsAuthenticated,]
     authentication_classes = [TokenAuthentication,]
